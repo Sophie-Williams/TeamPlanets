@@ -35,9 +35,9 @@ namespace team_planets {
   // ID types definition
   typedef unsigned int  player_id;  // Player ID definition
   typedef unsigned int  planet_id;  // Planet ID definition
-  
-  // Standard ID definitions
-  extern const player_id neutral_player; // Neutral player ID is always the same
 }
+
+// Standard ID definitions
+#define neutral_player  (0)
 
 #endif

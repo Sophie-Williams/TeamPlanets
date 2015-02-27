@@ -1,5 +1,5 @@
-// basic_types.cpp - Some basic types implementation
-// libTeamPlanets - A library of common data structures for engine and bots
+// main.cpp - Application entry point
+// TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 // All rights reserved.
@@ -28,9 +28,8 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include "basic_types.hpp"
+#include <cstdlib>
 
-using namespace team_planets;
-
-// Standard ID definitions
-extern const player_id  neutral_player  = 0;
+int main(int argc, char* argv[]) {
+  return EXIT_SUCCESS;
+}

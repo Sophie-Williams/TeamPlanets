@@ -28,7 +28,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
 project(teamplanets)
 
 # Setting standard compiler options
@@ -46,3 +46,4 @@ endif(NOT TEAMPLANETS_COMPILER_OPTS_WAS_SET)
 
 # Adding subprojects
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/libteamplanets)
+add_subdirectory(${PROJECT_SOURCE_DIR}/engine)

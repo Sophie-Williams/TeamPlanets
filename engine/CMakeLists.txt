@@ -1,5 +1,5 @@
-# libTeamPlanets building script
-# libTeamPlanets - A library of common data structures for engine and bots
+# TeamPlanetsEngine building script
+# TeamPlanetsEngine - TeamPlanets game engine
 #
 # Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 # All rights reserved.
@@ -29,19 +29,23 @@
 # SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
-project(libteamplanets)
+project(teamplanets_engine)
+
+# Project external dependencies
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5Widgets REQUIRED)
 
 # Project source files
-include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/../libs/libteamplanets/src)
 file(GLOB_RECURSE src_files ${PROJECT_SOURCE_DIR}/src/*.cpp)
-file(GLOB_RECURSE header_files ${PROJECT_SOURCE_DIR}/src/*.hpp)
 
 # Project targets
-add_library(teamplanets SHARED ${src_files})
+add_executable(${PROJECT_NAME} ${src_files})
+add_dependencies(${PROJECT_NAME} teamplanets)
+target_link_libraries(${PROJECT_NAME} teamplanets Qt5::Widgets)
 
 # Installation rules
-install(TARGETS teamplanets
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib)
-install(FILES ${header_files}
-        DESTINATION include)
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION bin)
