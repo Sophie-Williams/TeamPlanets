@@ -1,4 +1,4 @@
-// main.cpp - Application entry point
+// mainwindow.cpp - Application main window implementation
 // TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,16 +28,33 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <QApplication>
+#include <QtWidgets>
 #include "mainwindow.hpp"
 
 using namespace team_planets_engine;
 
-int main(int argc, char* argv[]) {
-  QApplication app(argc, argv);
+MainWindow::MainWindow(QWidget* parent):
+  QMainWindow(parent) {
+  buildInterface_();
+  connectSlots_();
+}
 
-  MainWindow win;
-  win.show();
+void MainWindow::startBattleActionTriggered() {
+}
 
-  return app.exec();
+void MainWindow::quitActionTriggered() {
+  qApp->quit();
+}
+
+void MainWindow::buildInterface_() {
+  // Creating the user interface
+  ui_.setupUi(this);
+
+  // Moving main splitter handle to a more comfortable position
+  ui_.mainSplitter->setStretchFactor(0, 2);
+}
+
+void MainWindow::connectSlots_() {
+  connect(ui_.startBattleAction, &QAction::triggered, this, &MainWindow::startBattleActionTriggered);
+  connect(ui_.quitAction, &QAction::triggered, this, &MainWindow::quitActionTriggered);
 }

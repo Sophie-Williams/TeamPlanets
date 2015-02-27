@@ -41,7 +41,7 @@ void Map::load_google_ai_challenge_map(const string& file_name) {
   planets_.clear();
   while(in) {
     // Reading data
-    char tag;
+    string tag;
     float x, y;
     unsigned int start_player_id, start_num_ships, ship_incr;
     in >> tag >> x >> y >> start_player_id >> start_num_ships >> ship_incr;

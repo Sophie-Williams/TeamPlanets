@@ -1,4 +1,4 @@
-// main.cpp - Application entry point
+// mainwindow.hpp - Application main window
 // TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,16 +28,31 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <QApplication>
-#include "mainwindow.hpp"
+#ifndef _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
+#define _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
 
-using namespace team_planets_engine;
+#include <QMainWindow>
+#include "ui_mainwindow.h"
 
-int main(int argc, char* argv[]) {
-  QApplication app(argc, argv);
+namespace team_planets_engine {
+  class MainWindow: public QMainWindow {
+    Q_OBJECT
 
-  MainWindow win;
-  win.show();
+  public:
+    explicit MainWindow(QWidget* parent = nullptr);
 
-  return app.exec();
+  private slots:
+    void startBattleActionTriggered();
+    void quitActionTriggered();
+
+  private:
+    Q_DISABLE_COPY(MainWindow)
+
+    void buildInterface_();
+    void connectSlots_();
+
+    Ui::MainWindow  ui_;
+  };
 }
+
+#endif
