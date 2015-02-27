@@ -1,4 +1,4 @@
-// basic_types.cpp - Some basic types implementation
+// map.hpp - Map class definition
 // libTeamPlanets - A library of common data structures for engine and bots
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,9 +28,49 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include "basic_types.hpp"
+#ifndef _TEAMPLANETS_LIBTEAMPLANETS_MAP_HPP_
+#define _TEAMPLANETS_LIBTEAMPLANETS_MAP_HPP_
 
-using namespace team_planets;
+#include <cassert>
+#include <vector>
+#include <string>
+#include "planet.hpp"
 
-// Standard ID definitions
-extern const player_id  neutral_player  = 0;
+namespace team_planets {
+  class Map {
+  private:
+    typedef std::vector<Planet> planet_list;
+
+  public:
+    typedef planet_list::iterator       planet_iterator;
+    typedef planet_list::const_iterator planet_const_iterator;
+
+    // Map loading functions
+    void load_google_ai_challenge_map(const std::string& file_name);
+
+    // Planets accessors
+    std::size_t num_planets() const { return planets_.size(); }
+    Planet& planet(planet_id id) {
+      assert(id != 0);
+      assert(id - 1 < planets_.size());
+
+      return planets_[id - 1];
+    }
+    const Planet& planet(planet_id id) const {
+      assert(id != 0);
+      assert(id - 1 < planets_.size());
+
+      return planets_[id - 1];
+    }
+
+    planet_iterator begin() { return planets_.begin(); }
+    planet_const_iterator begin() const { return planets_.begin(); }
+    planet_iterator end() { return planets_.end(); }
+    planet_const_iterator end() const { return planets_.end(); }
+
+  private:
+    planet_list planets_;
+  };
+}
+
+#endif

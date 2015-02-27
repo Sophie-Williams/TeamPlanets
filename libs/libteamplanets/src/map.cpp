@@ -1,4 +1,4 @@
-// basic_types.cpp - Some basic types implementation
+// map.cpp - Map class implementation
 // libTeamPlanets - A library of common data structures for engine and bots
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,9 +28,26 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include "basic_types.hpp"
+#include <iostream>
+#include <fstream>
+#include "map.hpp"
 
+using namespace std;
 using namespace team_planets;
 
-// Standard ID definitions
-extern const player_id  neutral_player  = 0;
+void Map::load_google_ai_challenge_map(const string& file_name) {
+  ifstream in(file_name);
+
+  planets_.clear();
+  while(in) {
+    // Reading data
+    char tag;
+    float x, y;
+    unsigned int start_player_id, start_num_ships, ship_incr;
+    in >> tag >> x >> y >> start_player_id >> start_num_ships >> ship_incr;
+
+    assert(tag != string("P"));
+    planets_.push_back(Planet((planet_id)(planets_.size() + 1), Coordinates(x, y), ship_incr,
+                              neutral_player, start_num_ships));
+  }
+}
