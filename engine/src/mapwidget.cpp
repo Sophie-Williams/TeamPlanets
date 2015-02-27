@@ -1,4 +1,4 @@
-// mainwindow.hpp - Application main window definition
+// mapwidget.cpp - MapWidget class implementation
 // TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,31 +28,19 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
-#define _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
+#include <QtGui>
+#include "mapwidget.hpp"
 
-#include <QMainWindow>
-#include "ui_mainwindow.h"
+using namespace team_planets_engine;
 
-namespace team_planets_engine {
-  class MainWindow: public QMainWindow {
-    Q_OBJECT
-
-  public:
-    explicit MainWindow(QWidget* parent = nullptr);
-
-  private slots:
-    void startBattleActionTriggered();
-    void quitActionTriggered();
-
-  private:
-    Q_DISABLE_COPY(MainWindow)
-
-    void buildInterface_();
-    void connectSlots_();
-
-    Ui::MainWindow  ui_;
-  };
+MapWidget::MapWidget(QWidget* parent, Qt::WindowFlags flags):
+  QWidget(parent, flags) {
 }
 
-#endif
+void MapWidget::paintEvent(QPaintEvent* event) {
+  QPainter painter(this);
+  painter.setRenderHint(QPainter::Antialiasing, true);
+
+  // Filling the background
+  painter.fillRect(0, 0, width(), height(), QBrush(Qt::black));
+}

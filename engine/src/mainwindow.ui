@@ -24,12 +24,12 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="battleMap" native="true"/>
+      <widget class="team_planets_engine::MapWidget" name="battleMap" native="true"/>
       <widget class="QSplitter" name="teamsSplitter">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="team1Layout">
          <item>
           <widget class="QLabel" name="team1Label">
@@ -46,7 +46,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="team2Layout">
          <item>
           <widget class="QLabel" name="team2Label">
@@ -104,6 +104,14 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>team_planets_engine::MapWidget</class>
+   <extends>QWidget</extends>
+   <header>mapwidget.hpp</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
