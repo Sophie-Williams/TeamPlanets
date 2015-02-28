@@ -30,6 +30,7 @@
 
 #include <QtCore>
 #include <QtGui>
+#include <cmath>
 #include <algorithm>
 #include "map.hpp"
 #include "mapwidget.hpp"
@@ -38,10 +39,23 @@ using namespace std;
 using namespace team_planets;
 using namespace team_planets_engine;
 
+inline qreal rad2deg(qreal angle) {
+  return (180.0/M_PI)*angle;
+}
+
+inline qreal sqr(qreal value) {
+  return value*value;
+}
+
+inline qreal euclidian_distance(const QPointF& p1, const QPointF& p2) {
+  return std::sqrt(sqr(p2.x() - p1.x()) + sqr(p2.y() - p1.y()));
+}
+
 MapWidget::MapWidget(QWidget* parent, Qt::WindowFlags flags):
   QWidget(parent, flags), map_mutex_(nullptr), map_(nullptr),
   background_color_(Qt::black), neutral_color_(Qt::green),
-  border_margin_(2.5), planet_base_radius_(15.0), planet_radius_incr_per_ship_prod_(1.0) {
+  border_margin_(2.5), planet_base_radius_(15.0), planet_radius_incr_per_ship_prod_(1.0),
+  fleet_size_(5.0) {
 }
 
 void MapWidget::paintEvent(QPaintEvent* event) {
@@ -51,23 +65,18 @@ void MapWidget::paintEvent(QPaintEvent* event) {
   // Filling the background
   painter.fillRect(0, 0, width(), height(), QBrush(background_color_));
 
-  // Drawing the planets
+  // Drawing the map
   map_mutex_->lock();
   compute_map_bounding_box_();
 
+  // Drawing the planets
   for_each(map_->planets_begin(), map_->planets_end(), [this, &painter](const Planet& planet) {
-    const QPointF planet_pos = compute_planet_location_in_widget_coordinates_(planet);
-    const qreal planet_radius = planet_base_radius_ + (qreal)planet.ship_increase()*planet_radius_incr_per_ship_prod_;
+    draw_planet_(painter, planet);
+  });
 
-    // Drawing planet
-    painter.setPen(neutral_color_);
-    painter.drawEllipse(planet_pos, planet_radius, planet_radius);
-
-    // Draw the number of ships
-    painter.drawText(QRectF(planet_pos.x() - planet_radius, planet_pos.y() - planet_radius,
-                            2.0*planet_radius, 2.0*planet_radius),
-                     Qt::AlignCenter,
-                     tr("%1").arg(planet.current_num_ships()));
+  // Drawing the fleets
+  for_each(map_->fleets_begin(), map_->fleets_end(), [this, &painter](const Fleet& fleet) {
+    draw_fleet_(painter, fleet);
   });
 
   map_mutex_->unlock();
@@ -103,4 +112,50 @@ QPointF MapWidget::compute_planet_location_in_widget_coordinates_(const Planet& 
   const float y = (planet.location().y() - (float)map_bounding_box_.y())
       *((float)height()/(float)map_bounding_box_.height());
   return QPointF((qreal)x, (qreal)y);
+}
+
+void MapWidget::draw_planet_(QPainter& painter, const Planet& planet) {
+  const QPointF planet_pos = compute_planet_location_in_widget_coordinates_(planet);
+  const qreal planet_radius = planet_base_radius_ + (qreal)planet.ship_increase()*planet_radius_incr_per_ship_prod_;
+
+  // Drawing planet
+  painter.setPen(neutral_color_);
+  painter.drawEllipse(planet_pos, planet_radius, planet_radius);
+
+  // Draw the number of ships
+  painter.drawText(QRectF(planet_pos.x() - planet_radius, planet_pos.y() - planet_radius,
+                          2.0*planet_radius, 2.0*planet_radius),
+                   Qt::AlignCenter,
+                   tr("%1").arg(planet.current_num_ships()));
+}
+
+void MapWidget::draw_fleet_(QPainter& painter, const Fleet& fleet) {
+  const QPointF source_pos = compute_planet_location_in_widget_coordinates_(map_->planet(fleet.source()));
+  const QPointF destination_pos = compute_planet_location_in_widget_coordinates_(map_->planet(fleet.destination()));
+
+  // Computing fleet position
+  const qreal traj_angle = rad2deg(std::atan2(destination_pos.y() - source_pos.y(),
+                                              destination_pos.x() - source_pos.x()));
+
+  const unsigned int travel_time = map_->planet(fleet.destination())
+      .compute_travel_distance(map_->planet(fleet.source()));
+  const qreal traj_adv = (qreal)(travel_time - fleet.remaining_turns())
+      *euclidian_distance(source_pos, destination_pos)/(qreal)travel_time;
+
+  painter.save();
+  painter.translate(source_pos);
+  painter.rotate(traj_angle);
+  painter.translate(traj_adv, 0);
+
+  // Drawing the ship
+  painter.setPen(neutral_color_);
+  painter.drawLine(QPointF(0.0, 0.0), QPointF(-fleet_size_, fleet_size_));
+  painter.drawLine(QPointF(-fleet_size_, fleet_size_), QPointF(-fleet_size_, -fleet_size_));
+  painter.drawLine(QPointF(-fleet_size_, -fleet_size_), QPointF(0.0, 0.0));
+
+  // Drawing the number of ships
+  painter.rotate(-traj_angle);
+  painter.drawText(0, -fleet_size_, tr("%1").arg(fleet.num_ships()));
+
+  painter.restore();
 }

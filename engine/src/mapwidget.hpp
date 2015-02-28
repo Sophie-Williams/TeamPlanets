@@ -35,7 +35,7 @@
 #include <QColor>
 
 class QMutex;
-namespace team_planets { class Map; class Planet; }
+namespace team_planets { class Map; class Planet; class Fleet; }
 
 namespace team_planets_engine {
   class MapWidget: public QWidget {
@@ -47,6 +47,7 @@ namespace team_planets_engine {
     Q_PROPERTY(qreal planet_radius_incr_per_ship_prod
                READ planet_radius_incr_per_ship_prod
                WRITE set_planet_radius_incr_per_ship_prod)
+    Q_PROPERTY(qreal fleet_size READ fleet_size WRITE set_fleet_size)
 
   public:
     explicit MapWidget(QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
@@ -70,6 +71,8 @@ namespace team_planets_engine {
     void set_planet_radius_incr_per_ship_prod(qreal planet_radius_incr_per_ship_prod) {
       planet_radius_incr_per_ship_prod_ = planet_radius_incr_per_ship_prod;
     }
+    qreal fleet_size() const { return fleet_size_; }
+    void set_fleet_size(qreal fleet_size) { fleet_size_ = fleet_size; }
 
   protected:
     virtual void paintEvent(QPaintEvent* event);
@@ -80,6 +83,9 @@ namespace team_planets_engine {
     // Internal drawing routines
     void compute_map_bounding_box_();
     QPointF compute_planet_location_in_widget_coordinates_(const team_planets::Planet& planet);
+
+    void draw_planet_(QPainter& painter, const team_planets::Planet& planet);
+    void draw_fleet_(QPainter& painter, const team_planets::Fleet& fleet);
 
     // The battle map
     QMutex*             map_mutex_;
@@ -92,6 +98,7 @@ namespace team_planets_engine {
     qreal   border_margin_;
     qreal   planet_base_radius_;
     qreal   planet_radius_incr_per_ship_prod_;
+    qreal   fleet_size_;
 
     // Internal data
     QRectF  map_bounding_box_;

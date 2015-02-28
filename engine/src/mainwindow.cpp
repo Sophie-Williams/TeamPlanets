@@ -92,6 +92,8 @@ void MainWindow::startNewBattle_(QString map_file_name) {
     qDebug() << "Loaded map from" << map_file_name << ":" << map_.num_planets() << " planets.";
 
     map_.launch_fleet_with_validation(neutral_player, 2, 3, 50);
+    map_.fleets_begin()->advance();
+    map_.fleets_begin()->advance();
     qDebug() << "Fleet: player =" << map_.fleets_begin()->player()
              << "source =" << map_.fleets_begin()->source()
              << "destination =" << map_.fleets_begin()->destination()
