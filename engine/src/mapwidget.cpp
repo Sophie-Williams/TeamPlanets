@@ -28,13 +28,16 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
+#include <QtCore>
 #include <QtGui>
+#include "map.hpp"
 #include "mapwidget.hpp"
 
 using namespace team_planets_engine;
 
 MapWidget::MapWidget(QWidget* parent, Qt::WindowFlags flags):
-  QWidget(parent, flags) {
+  QWidget(parent, flags), map_mutex_(nullptr), map_(nullptr),
+  background_color_(Qt::black) {
 }
 
 void MapWidget::paintEvent(QPaintEvent* event) {
@@ -42,5 +45,5 @@ void MapWidget::paintEvent(QPaintEvent* event) {
   painter.setRenderHint(QPainter::Antialiasing, true);
 
   // Filling the background
-  painter.fillRect(0, 0, width(), height(), QBrush(Qt::black));
+  painter.fillRect(0, 0, width(), height(), QBrush(background_color_));
 }

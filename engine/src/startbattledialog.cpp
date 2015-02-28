@@ -1,5 +1,5 @@
-// map.cpp - Map class implementation
-// libTeamPlanets - A library of common data structures for engine and bots
+// startbattledialog.cpp - StartBattleDialog class implementation
+// TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 // All rights reserved.
@@ -28,29 +28,43 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
-#include "map.hpp"
+#include <QtWidgets>
+#include "startbattledialog.hpp"
 
-using namespace std;
-using namespace team_planets;
+using namespace team_planets_engine;
 
-void Map::load_google_ai_challenge_map(const string& file_name) {
-  ifstream in(file_name);
-  if(!in) throw runtime_error("Unable to load map from " + file_name + ".");
+StartBattleDialog::StartBattleDialog(QWidget* parent, Qt::WindowFlags flags):
+  QDialog(parent, flags) {
+  buildInterface_();
+  connectSlots_();
+}
 
-  planets_.clear();
-  while(in) {
-    // Reading data
-    string tag;
-    float x, y;
-    unsigned int start_player_id, start_num_ships, ship_incr;
-    in >> tag >> x >> y >> start_player_id >> start_num_ships >> ship_incr;
+void StartBattleDialog::mapButtonClicked_() {
+  QString file_name = QFileDialog::getOpenFileName(this, tr("Open map..."), ui_.mapLineEdit->text(),
+                                                   tr("Google AI challenge map files (*.txt);;All files (*.*)"));
 
-    if(tag == string("P")) {
-      planets_.push_back(Planet((planet_id)(planets_.size() + 1), Coordinates(x, y), ship_incr,
-                                neutral_player, start_num_ships));
-    }
-  }
+  if(!file_name.isEmpty()) ui_.mapLineEdit->setText(file_name);
+}
+
+void StartBattleDialog::team1ButtonClicked_() {
+}
+
+void StartBattleDialog::team2ButtonClicked_() {
+}
+
+void StartBattleDialog::checkUserInput_() {
+  ui_.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(!ui_.mapLineEdit->text().isEmpty());
+}
+
+void StartBattleDialog::buildInterface_() {
+  ui_.setupUi(this);
+  checkUserInput_();
+}
+
+void StartBattleDialog::connectSlots_() {
+  connect(ui_.mapButton, &QPushButton::clicked, this, &StartBattleDialog::mapButtonClicked_);
+  connect(ui_.team1Button, &QPushButton::clicked, this, &StartBattleDialog::team1ButtonClicked_);
+  connect(ui_.team2Button, &QPushButton::clicked, this, &StartBattleDialog::team2ButtonClicked_);
+
+  connect(ui_.mapLineEdit, &QLineEdit::textChanged, this, &StartBattleDialog::checkUserInput_);
 }

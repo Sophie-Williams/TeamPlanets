@@ -1,5 +1,5 @@
-// map.cpp - Map class implementation
-// libTeamPlanets - A library of common data structures for engine and bots
+// startbattledialog.hpp - StartBattleDialog class definition
+// TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 // All rights reserved.
@@ -28,29 +28,37 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
-#include "map.hpp"
+#ifndef _TEAMPLANETS_TEAMPLANETSENGINE_STARTBATTLEDIALOG_HPP_
+#define _TEAMPLANETS_TEAMPLANETSENGINE_STARTBATTLEDIALOG_HPP_
 
-using namespace std;
-using namespace team_planets;
+#include <QDialog>
+#include <QString>
+#include "ui_startbattledialog.h"
 
-void Map::load_google_ai_challenge_map(const string& file_name) {
-  ifstream in(file_name);
-  if(!in) throw runtime_error("Unable to load map from " + file_name + ".");
+namespace team_planets_engine {
+  class StartBattleDialog: public QDialog {
+    Q_OBJECT
 
-  planets_.clear();
-  while(in) {
-    // Reading data
-    string tag;
-    float x, y;
-    unsigned int start_player_id, start_num_ships, ship_incr;
-    in >> tag >> x >> y >> start_player_id >> start_num_ships >> ship_incr;
+  public:
+    explicit StartBattleDialog(QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
 
-    if(tag == string("P")) {
-      planets_.push_back(Planet((planet_id)(planets_.size() + 1), Coordinates(x, y), ship_incr,
-                                neutral_player, start_num_ships));
-    }
-  }
+    QString map_file_name() const { return ui_.mapLineEdit->text(); }
+
+  private slots:
+    void mapButtonClicked_();
+    void team1ButtonClicked_();
+    void team2ButtonClicked_();
+
+    void checkUserInput_();
+
+  private:
+    Q_DISABLE_COPY(StartBattleDialog)
+
+    void buildInterface_();
+    void connectSlots_();
+
+    Ui::StartBattleDialog ui_;
+  };
 }
+
+#endif

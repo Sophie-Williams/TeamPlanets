@@ -32,19 +32,39 @@
 #define _TEAMPLANETS_TEAMPLANETSENGINE_MAPWIDGET_HPP_
 
 #include <QWidget>
+#include <QColor>
+
+class QMutex;
+namespace team_planets { class Map; }
 
 namespace team_planets_engine {
   class MapWidget: public QWidget {
     Q_OBJECT
+    Q_PROPERTY(QColor background_color READ background_color WRITE set_background_color)
 
   public:
     explicit MapWidget(QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
+
+    void set_map(QMutex& map_mutex, team_planets::Map& map) {
+      map_mutex_ = &map_mutex;
+      map_ = &map;
+    }
+
+    // Different map colors accessors
+    QColor background_color() const { return background_color_; }
+    void set_background_color(QColor background_color) { background_color_ = background_color; }
 
   protected:
     virtual void paintEvent(QPaintEvent* event);
 
   private:
     Q_DISABLE_COPY(MapWidget)
+
+    QMutex*             map_mutex_;
+    team_planets::Map*  map_;
+
+    // Different map colors
+    QColor  background_color_;
   };
 }
 

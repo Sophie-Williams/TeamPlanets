@@ -29,6 +29,7 @@
 // SUCH DAMAGE.
 
 #include <QtWidgets>
+#include "startbattledialog.hpp"
 #include "mainwindow.hpp"
 
 using namespace team_planets_engine;
@@ -39,22 +40,40 @@ MainWindow::MainWindow(QWidget* parent):
   connectSlots_();
 }
 
-void MainWindow::startBattleActionTriggered() {
+void MainWindow::startBattleActionTriggered_() {
+  static StartBattleDialog* dialog  = nullptr;
+  if(!dialog) dialog = new StartBattleDialog(this);
+
+  if(dialog->exec()) startNewBattle_(dialog->map_file_name());
 }
 
-void MainWindow::quitActionTriggered() {
+void MainWindow::quitActionTriggered_() {
   qApp->quit();
 }
 
 void MainWindow::buildInterface_() {
   // Creating the user interface
   ui_.setupUi(this);
+  ui_.battleMap->set_map(map_mutex_, map_);
 
   // Moving main splitter handle to a more comfortable position
   ui_.mainSplitter->setStretchFactor(0, 2);
 }
 
 void MainWindow::connectSlots_() {
-  connect(ui_.startBattleAction, &QAction::triggered, this, &MainWindow::startBattleActionTriggered);
-  connect(ui_.quitAction, &QAction::triggered, this, &MainWindow::quitActionTriggered);
+  connect(ui_.startBattleAction, &QAction::triggered, this, &MainWindow::startBattleActionTriggered_);
+  connect(ui_.quitAction, &QAction::triggered, this, &MainWindow::quitActionTriggered_);
+}
+
+void MainWindow::startNewBattle_(QString map_file_name) {
+  qDebug() << "Starting new battle...";
+
+  try {
+    map_.load_google_ai_challenge_map(map_file_name.toStdString());
+    qDebug() << "Loaded map from" << map_file_name << ":" << map_.num_planets() << " planets.";
+  } catch(const std::exception& e) {
+    QMessageBox::critical(this, tr("Unable to start a battle"), QString(e.what()));
+    qDebug() << "ERROR:" << e.what();
+    qDebug() << "Starting of a new battle was aborted due to an error!";
+  }
 }

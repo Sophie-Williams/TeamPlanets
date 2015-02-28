@@ -32,6 +32,9 @@
 #define _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
 
 #include <QMainWindow>
+#include <QString>
+#include <QMutex>
+#include "map.hpp"
 #include "ui_mainwindow.h"
 
 namespace team_planets_engine {
@@ -42,8 +45,8 @@ namespace team_planets_engine {
     explicit MainWindow(QWidget* parent = nullptr);
 
   private slots:
-    void startBattleActionTriggered();
-    void quitActionTriggered();
+    void startBattleActionTriggered_();
+    void quitActionTriggered_();
 
   private:
     Q_DISABLE_COPY(MainWindow)
@@ -51,7 +54,12 @@ namespace team_planets_engine {
     void buildInterface_();
     void connectSlots_();
 
+    void startNewBattle_(QString map_file_name);
+
     Ui::MainWindow  ui_;
+
+    QMutex            map_mutex_;
+    team_planets::Map map_;
   };
 }
 
