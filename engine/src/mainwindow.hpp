@@ -42,7 +42,10 @@ namespace team_planets_engine {
     Q_OBJECT
 
   public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    MainWindow(int argc, char* argv[], QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
+
+  protected:
+    virtual void showEvent(QShowEvent* event);
 
   private slots:
     void startBattleActionTriggered_();
@@ -54,10 +57,17 @@ namespace team_planets_engine {
     void buildInterface_();
     void connectSlots_();
 
+    void parseCommandLine_();
     void startNewBattle_(QString map_file_name);
 
+    // User interface
     Ui::MainWindow  ui_;
 
+    // Application command line
+    const int     argc_;
+    const char**  argv_;
+
+    // Application data
     QMutex            map_mutex_;
     team_planets::Map map_;
   };

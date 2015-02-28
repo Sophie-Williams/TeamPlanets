@@ -34,10 +34,20 @@
 
 using namespace team_planets_engine;
 
-MainWindow::MainWindow(QWidget* parent):
-  QMainWindow(parent) {
+MainWindow::MainWindow(int argc, char* argv[], QWidget* parent, Qt::WindowFlags flags):
+  QMainWindow(parent, flags), argc_(argc), argv_((const char**)argv) {
   buildInterface_();
   connectSlots_();
+}
+
+void MainWindow::showEvent(QShowEvent* event) {
+  QMainWindow::showEvent(event);
+
+  static bool first_time_show_event = true;
+  if(first_time_show_event) {
+    first_time_show_event = false;
+    parseCommandLine_();
+  }
 }
 
 void MainWindow::startBattleActionTriggered_() {
@@ -63,6 +73,12 @@ void MainWindow::buildInterface_() {
 void MainWindow::connectSlots_() {
   connect(ui_.startBattleAction, &QAction::triggered, this, &MainWindow::startBattleActionTriggered_);
   connect(ui_.quitAction, &QAction::triggered, this, &MainWindow::quitActionTriggered_);
+}
+
+void MainWindow::parseCommandLine_() {
+  if(argc_ > 1) {
+    startNewBattle_(argv_[1]);
+  }
 }
 
 void MainWindow::startNewBattle_(QString map_file_name) {
