@@ -36,11 +36,16 @@
 using namespace std;
 using namespace team_planets;
 
+// Map loading functions
+void Map::reset() {
+  planets_.clear();
+  fleets_.clear();
+}
+
 void Map::load_google_ai_challenge_map(const string& file_name) {
   ifstream in(file_name);
   if(!in) throw runtime_error("Unable to load map from " + file_name + ".");
 
-  planets_.clear();
   while(in) {
     // Reading data
     string tag;
@@ -53,4 +58,29 @@ void Map::load_google_ai_challenge_map(const string& file_name) {
                                 neutral_player, start_num_ships));
     }
   }
+}
+
+// Game mechanics implementation
+void Map::launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships) {
+  // Perform the launch
+  planet(source).remove_ships(num_ships);
+  fleets_.push_back(Fleet(player, source, destination, num_ships,
+                          planet(destination).compute_travel_distance(planet(source))));
+}
+
+// Game mechanics with validation (for the engine)
+void Map::launch_fleet_with_validation(player_id player, planet_id source, planet_id destination,
+                                       unsigned int num_ships) {
+  // Performing logical checks
+  if(source == 0) throw logic_error("Fleet launch: Invalid source planet.");
+  if(source > planets_.size()) throw logic_error("Fleet launch: Invalid source planet.");
+  if(destination == 0) throw logic_error("Fleet launch: Invalid source planet.");
+  if(destination > planets_.size()) throw logic_error("Fleet launch: Invalid source planet.");
+  if(planet(source).current_owner() != player)
+    throw logic_error("Fleet launch: Player is not the owner of the source planet.");
+  if(planet(source).current_num_ships() < num_ships)
+    throw logic_error("Fleet launch: Source planet haven't enough ships.");
+
+  // Performing the order
+  launch_fleet(player, source, destination, num_ships);
 }

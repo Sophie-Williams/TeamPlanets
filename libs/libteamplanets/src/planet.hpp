@@ -31,6 +31,7 @@
 #ifndef _TEAMPLANETS_LIBTEAMPLANETS_PLANET_HPP_
 #define _TEAMPLANETS_LIBTEAMPLANETS_PLANET_HPP_
 
+#include <cassert>
 #include <cmath>
 #include "basic_types.hpp"
 #include "coordinates.hpp"
@@ -59,6 +60,10 @@ namespace team_planets {
     
     unsigned int compute_travel_distance(const Planet& other_planet) {
       return (unsigned int)std::trunc(location_.euclidian_distance(other_planet.location_));
+    }
+    void remove_ships(unsigned int num_ships) {
+      assert(num_ships <= current_num_ships_);
+      current_num_ships_ -= num_ships;
     }
     
   private:

@@ -35,17 +35,22 @@
 #include <vector>
 #include <string>
 #include "planet.hpp"
+#include "fleet.hpp"
 
 namespace team_planets {
   class Map {
   private:
-    typedef std::vector<Planet> planet_list;
+    typedef std::vector<Planet> planets_list;
+    typedef std::vector<Fleet>  fleets_list;
 
   public:
-    typedef planet_list::iterator       planet_iterator;
-    typedef planet_list::const_iterator planet_const_iterator;
+    typedef planets_list::iterator        planet_iterator;
+    typedef planets_list::const_iterator  planet_const_iterator;
+    typedef fleets_list::iterator         fleet_iterator;
+    typedef fleets_list::const_iterator   fleet_const_iterator;
 
     // Map loading functions
+    void reset();
     void load_google_ai_challenge_map(const std::string& file_name);
 
     // Planets accessors
@@ -68,8 +73,23 @@ namespace team_planets {
     planet_iterator planets_end() { return planets_.end(); }
     planet_const_iterator planets_end() const { return planets_.end(); }
 
+    // Fleets accessors
+    std::size_t num_fleets() const { return fleets_.size(); }
+    fleet_iterator fleets_begin() { return fleets_.begin(); }
+    fleet_const_iterator fleets_begin() const { return fleets_.begin(); }
+    fleet_iterator fleets_end() { return fleets_.end(); }
+    fleet_const_iterator fleets_end() const { return fleets_.end(); }
+
+    // Game mechanics implementation
+    void launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships);
+
+    // Game mechanics with validation (for the engine)
+    void launch_fleet_with_validation(player_id player, planet_id source, planet_id destination,
+                                      unsigned int num_ships);
+
   private:
-    planet_list planets_;
+    planets_list planets_;
+    fleets_list fleets_;
   };
 }
 

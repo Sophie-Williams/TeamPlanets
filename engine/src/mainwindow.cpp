@@ -85,9 +85,18 @@ void MainWindow::startNewBattle_(QString map_file_name) {
   qDebug() << "Starting new battle...";
 
   try {
+    map_.reset();
+
     map_.load_google_ai_challenge_map(map_file_name.toStdString());
     ui_.battleMap->update();
     qDebug() << "Loaded map from" << map_file_name << ":" << map_.num_planets() << " planets.";
+
+    map_.launch_fleet_with_validation(neutral_player, 2, 3, 50);
+    qDebug() << "Fleet: player =" << map_.fleets_begin()->player()
+             << "source =" << map_.fleets_begin()->source()
+             << "destination =" << map_.fleets_begin()->destination()
+             << "num_ships =" << map_.fleets_begin()->num_ships()
+             << "remaining_turns =" << map_.fleets_begin()->remaining_turns();
   } catch(const std::exception& e) {
     QMessageBox::critical(this, tr("Unable to start a battle"), QString(e.what()));
     qDebug() << "ERROR:" << e.what();
