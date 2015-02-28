@@ -63,10 +63,10 @@ namespace team_planets {
       return planets_[id - 1];
     }
 
-    planet_iterator begin() { return planets_.begin(); }
-    planet_const_iterator begin() const { return planets_.begin(); }
-    planet_iterator end() { return planets_.end(); }
-    planet_const_iterator end() const { return planets_.end(); }
+    planet_iterator planets_begin() { return planets_.begin(); }
+    planet_const_iterator planets_begin() const { return planets_.begin(); }
+    planet_iterator planets_end() { return planets_.end(); }
+    planet_const_iterator planets_end() const { return planets_.end(); }
 
   private:
     planet_list planets_;

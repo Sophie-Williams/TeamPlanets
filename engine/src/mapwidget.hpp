@@ -35,12 +35,18 @@
 #include <QColor>
 
 class QMutex;
-namespace team_planets { class Map; }
+namespace team_planets { class Map; class Planet; }
 
 namespace team_planets_engine {
   class MapWidget: public QWidget {
     Q_OBJECT
     Q_PROPERTY(QColor background_color READ background_color WRITE set_background_color)
+    Q_PROPERTY(QColor neutral_color READ neutral_color WRITE set_neutral_color)
+    Q_PROPERTY(qreal border_margin READ border_margin WRITE set_border_margin)
+    Q_PROPERTY(qreal planet_base_radius READ planet_base_radius WRITE set_planet_base_radius)
+    Q_PROPERTY(qreal planet_radius_incr_per_ship_prod
+               READ planet_radius_incr_per_ship_prod
+               WRITE set_planet_radius_incr_per_ship_prod)
 
   public:
     explicit MapWidget(QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
@@ -53,6 +59,17 @@ namespace team_planets_engine {
     // Different map colors accessors
     QColor background_color() const { return background_color_; }
     void set_background_color(QColor background_color) { background_color_ = background_color; }
+    QColor neutral_color() const { return neutral_color_; }
+    void set_neutral_color(QColor neutral_color) { neutral_color_ = neutral_color; }
+
+    qreal border_margin() const { return border_margin_; }
+    void set_border_margin(qreal border_margin) { border_margin_ = border_margin; }
+    qreal planet_base_radius() const { return planet_base_radius_; }
+    void set_planet_base_radius(qreal planet_base_radius) { planet_base_radius_ = planet_base_radius; }
+    qreal planet_radius_incr_per_ship_prod() const { return planet_radius_incr_per_ship_prod_; }
+    void set_planet_radius_incr_per_ship_prod(qreal planet_radius_incr_per_ship_prod) {
+      planet_radius_incr_per_ship_prod_ = planet_radius_incr_per_ship_prod;
+    }
 
   protected:
     virtual void paintEvent(QPaintEvent* event);
@@ -60,11 +77,24 @@ namespace team_planets_engine {
   private:
     Q_DISABLE_COPY(MapWidget)
 
+    // Internal drawing routines
+    void compute_map_bounding_box_();
+    QPointF compute_planet_location_in_widget_coordinates_(const team_planets::Planet& planet);
+
+    // The battle map
     QMutex*             map_mutex_;
     team_planets::Map*  map_;
 
-    // Different map colors
+    // Different map colors and properties
     QColor  background_color_;
+    QColor  neutral_color_;
+
+    qreal   border_margin_;
+    qreal   planet_base_radius_;
+    qreal   planet_radius_incr_per_ship_prod_;
+
+    // Internal data
+    QRectF  map_bounding_box_;
   };
 }
 
