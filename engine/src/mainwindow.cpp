@@ -87,7 +87,7 @@ void MainWindow::startNewBattle_(QString map_file_name) {
   try {
     map_.reset();
 
-    map_.load_google_ai_challenge_map(map_file_name.toStdString());
+    map_.load(map_file_name.toStdString());
     ui_.battleMap->update();
     qDebug() << "Loaded map from" << map_file_name << ":" << map_.num_planets() << " planets.";
   } catch(const std::exception& e) {

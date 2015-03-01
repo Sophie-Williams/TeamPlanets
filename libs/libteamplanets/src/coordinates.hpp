@@ -39,18 +39,39 @@ namespace team_planets {
     Coordinates(float x = 0.0f, float y = 0.0f):
       x_(x), y_(y) {}
     
+    // Accessors
     float x() const { return x_; }
     float y() const { return y_; }
     
+    // Various game mechanics functions
     float euclidian_distance(const Coordinates& coord) const {
       const float x_diff = x_ - coord.x_;
       const float y_diff = y_ - coord.y_;
       return std::sqrt(x_diff*x_diff + y_diff*y_diff);
     }
-    
+
   private:
-    const float x_, y_;
+    template<typename charT, typename traits>
+    friend std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out,
+                                                        const Coordinates& coord);
+    template<typename charT, typename traits>
+    friend std::basic_istream<charT,traits>& operator>>(std::basic_istream<charT,traits>& in, Coordinates& coord);
+
+    float x_, y_;
   };
+
+  // Input/output operators
+  template<typename charT, typename traits>
+  std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Coordinates& coord) {
+    out << coord.x_ << ' ' << coord.y_;
+    return out;
+  }
+
+  template<typename charT, typename traits>
+  std::basic_istream<charT,traits>& operator>>(std::basic_istream<charT,traits>& in, Coordinates& coord) {
+    in >> coord.x_ >> coord.y_;
+    return in;
+  }
 }
 
 #endif

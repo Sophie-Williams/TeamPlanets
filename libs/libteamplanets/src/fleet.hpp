@@ -56,10 +56,10 @@ namespace team_planets {
 
   private:
     // Constant fleet data
-    const player_id     player_;
-    const planet_id     source_;
-    const planet_id     destination_;
-    const unsigned int  num_ships_;
+    player_id     player_;
+    planet_id     source_;
+    planet_id     destination_;
+    unsigned int  num_ships_;
 
     // Variable fleet data
     unsigned int        remaining_turns_;

@@ -33,17 +33,20 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 #include "basic_types.hpp"
 #include "coordinates.hpp"
 
 namespace team_planets {
   class Planet {
   public:
+    Planet():
+      id_(0), ship_increase_(0), current_owner_(neutral_player), current_num_ships_(0) {}
     Planet(planet_id id, const Coordinates& location, unsigned int ship_increase,
            player_id current_owner = neutral_player, unsigned int current_num_ships = 0):
       id_(id), location_(location), ship_increase_(ship_increase), current_owner_(current_owner),
       current_num_ships_(current_num_ships) {}
-    
+
     // Constant planet data accessors
     planet_id id() const { return id_; }
     const Coordinates& location() const { return location_; }
@@ -65,17 +68,36 @@ namespace team_planets {
       assert(num_ships <= current_num_ships_);
       current_num_ships_ -= num_ships;
     }
-    
+
   private:
+    template<typename charT, typename traits>
+    friend std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Planet& P);
+    template<typename charT, typename traits>
+    friend std::basic_istream<charT,traits>& operator>>(std::basic_istream<charT,traits>& in, Planet& P);
+
     // Constant planet data
-    const planet_id     id_;            // The planet ID
-    const Coordinates   location_;      // The planet location
-    const unsigned int  ship_increase_; // Number of ships added per turn
+    planet_id     id_;            // The planet ID
+    Coordinates   location_;      // The planet location
+    unsigned int  ship_increase_; // Number of ships added per turn
     
     // Variable planet data
     player_id     current_owner_;           // The current owner of the planet
     unsigned int  current_num_ships_;       // Number of ships currently on this planet         
   };
+
+  // Input/output operators
+  template<typename charT, typename traits>
+  std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Planet& P) {
+    out << "P " << P.id_ << ' ' << P.location_ << ' ';
+    out << P.ship_increase_ << ' ' << P.current_owner_ << ' ' << P.current_num_ships_ << std::endl;
+    return out;
+  }
+
+  template<typename charT, typename traits>
+  std::basic_istream<charT,traits>& operator>>(std::basic_istream<charT,traits>& in, Planet& P) {
+    in >> P.id_ >> P.location_ >> P.ship_increase_ >> P.current_owner_ >> P.current_num_ships_;
+    return in;
+  }
 }
 
 #endif

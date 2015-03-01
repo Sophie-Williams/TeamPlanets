@@ -51,7 +51,7 @@ namespace team_planets {
 
     // Map loading functions
     void reset();
-    void load_google_ai_challenge_map(const std::string& file_name);
+    void load(const std::string& file_name);
 
     // Planets accessors
     std::size_t num_planets() const { return planets_.size(); }

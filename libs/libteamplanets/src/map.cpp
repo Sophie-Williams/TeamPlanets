@@ -31,6 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <algorithm>
 #include "map.hpp"
 
 using namespace std;
@@ -42,22 +43,35 @@ void Map::reset() {
   fleets_.clear();
 }
 
-void Map::load_google_ai_challenge_map(const string& file_name) {
+void Map::load(const string& file_name) {
   ifstream in(file_name);
   if(!in) throw runtime_error("Unable to load map from " + file_name + ".");
 
+  // Loading planets in order
+  planets_list tmp_list;
   while(in) {
-    // Reading data
     string tag;
-    float x, y;
-    unsigned int start_player_id, start_num_ships, ship_incr;
-    in >> tag >> x >> y >> start_player_id >> start_num_ships >> ship_incr;
+    in >> tag;
 
     if(tag == string("P")) {
-      planets_.push_back(Planet((planet_id)(planets_.size() + 1), Coordinates(x, y), ship_incr,
-                                neutral_player, start_num_ships));
+      Planet P;
+      in >> P;
+
+      assert(P.id() != 0);
+      tmp_list.push_back(P);
     }
   }
+
+  // Placing planets at correct positions (even if there is holes in planet's IDs)
+  planet_id max_id = 0;
+  for_each(tmp_list.begin(), tmp_list.end(), [&max_id](const Planet& P) {
+    if(P.id() > max_id) max_id = P.id();
+  });
+
+  planets_.resize(max_id);
+  for_each(tmp_list.begin(), tmp_list.end(), [this](const Planet& P) {
+    planets_[P.id() - 1] = P;
+  });
 }
 
 // Game mechanics implementation
