@@ -41,19 +41,25 @@ StartBattleDialog::StartBattleDialog(QWidget* parent, Qt::WindowFlags flags):
 
 void StartBattleDialog::mapButtonClicked_() {
   QString file_name = QFileDialog::getOpenFileName(this, tr("Open map..."), ui_.mapLineEdit->text(),
-                                                   tr("Google AI challenge map files (*.txt);;All files (*.*)"));
+                                                   tr("Google AI challenge map files (*.txt);;All files (*)"));
 
   if(!file_name.isEmpty()) ui_.mapLineEdit->setText(file_name);
 }
 
 void StartBattleDialog::team1ButtonClicked_() {
+  QString file_name = getBotFileName_(ui_.team1LineEdit->text());
+  if(!file_name.isEmpty()) ui_.team1LineEdit->setText(file_name);
 }
 
 void StartBattleDialog::team2ButtonClicked_() {
+  QString file_name = getBotFileName_(ui_.team2LineEdit->text());
+  if(!file_name.isEmpty()) ui_.team2LineEdit->setText(file_name);
 }
 
 void StartBattleDialog::checkUserInput_() {
-  ui_.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(!ui_.mapLineEdit->text().isEmpty());
+  ui_.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(!ui_.mapLineEdit->text().isEmpty()
+                                                          && !ui_.team1LineEdit->text().isEmpty()
+                                                          && !ui_.team2LineEdit->text().isEmpty());
 }
 
 void StartBattleDialog::buildInterface_() {
@@ -67,4 +73,12 @@ void StartBattleDialog::connectSlots_() {
   connect(ui_.team2Button, &QPushButton::clicked, this, &StartBattleDialog::team2ButtonClicked_);
 
   connect(ui_.mapLineEdit, &QLineEdit::textChanged, this, &StartBattleDialog::checkUserInput_);
+  connect(ui_.team1LineEdit, &QLineEdit::textChanged, this, &StartBattleDialog::checkUserInput_);
+  connect(ui_.team2LineEdit, &QLineEdit::textChanged, this, &StartBattleDialog::checkUserInput_);
+}
+
+QString StartBattleDialog::getBotFileName_(QString current_file_name) {
+  QString file_name = QFileDialog::getOpenFileName(this, tr("Open bot executable..."), current_file_name,
+                                                   tr("All files (*)"));
+  return file_name;
 }

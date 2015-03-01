@@ -58,7 +58,9 @@ namespace team_planets_engine {
     void connectSlots_();
 
     void parseCommandLine_();
-    void startNewBattle_(QString map_file_name);
+    void startNewBattle_(QString map_file_name,
+                         QString team1_bot_file_name, unsigned int team1_num_players,
+                         QString team2_bot_file_name, unsigned int team2_num_players);
 
     // User interface
     Ui::MainWindow  ui_;

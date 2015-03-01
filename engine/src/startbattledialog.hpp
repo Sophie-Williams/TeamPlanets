@@ -43,6 +43,10 @@ namespace team_planets_engine {
     explicit StartBattleDialog(QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
 
     QString map_file_name() const { return ui_.mapLineEdit->text(); }
+    QString team1_bot_file_name() const { return ui_.team1LineEdit->text(); }
+    unsigned int team1_num_players() const { return (unsigned int)ui_.team1SpinBox->value(); }
+    QString team2_bot_file_name() const { return ui_.team2LineEdit->text(); }
+    unsigned int team2_num_players() const { return (unsigned int)ui_.team2SpinBox->value(); }
 
   private slots:
     void mapButtonClicked_();
@@ -56,6 +60,8 @@ namespace team_planets_engine {
 
     void buildInterface_();
     void connectSlots_();
+
+    QString getBotFileName_(QString current_file_name);
 
     Ui::StartBattleDialog ui_;
   };

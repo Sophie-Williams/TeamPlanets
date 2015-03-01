@@ -54,7 +54,10 @@ void MainWindow::startBattleActionTriggered_() {
   static StartBattleDialog* dialog  = nullptr;
   if(!dialog) dialog = new StartBattleDialog(this);
 
-  if(dialog->exec()) startNewBattle_(dialog->map_file_name());
+  if(dialog->exec())
+    startNewBattle_(dialog->map_file_name(),
+                    dialog->team1_bot_file_name(), dialog->team1_num_players(),
+                    dialog->team2_bot_file_name(), dialog->team2_num_players());
 }
 
 void MainWindow::quitActionTriggered_() {
@@ -76,12 +79,18 @@ void MainWindow::connectSlots_() {
 }
 
 void MainWindow::parseCommandLine_() {
-  if(argc_ > 1) {
-    startNewBattle_(argv_[1]);
+  if(argc_ > 5) {
+    bool ok1 = false, ok2 = false;
+    const unsigned int team1_num_players = QString(argv_[3]).toUInt(&ok1);
+    const unsigned int team2_num_players = QString(argv_[5]).toUInt(&ok2);
+
+    if(ok1 && ok2) startNewBattle_(argv_[1], argv_[2], team1_num_players, argv_[4], team2_num_players);
   }
 }
 
-void MainWindow::startNewBattle_(QString map_file_name) {
+void MainWindow::startNewBattle_(QString map_file_name,
+                                 QString team1_bot_file_name, unsigned int team1_num_players,
+                                 QString team2_bot_file_name, unsigned int team2_num_players) {
   qDebug() << "Starting new battle...";
 
   try {
@@ -90,6 +99,9 @@ void MainWindow::startNewBattle_(QString map_file_name) {
     map_.load(map_file_name.toStdString());
     ui_.battleMap->update();
     qDebug() << "Loaded map from" << map_file_name << ":" << map_.num_planets() << " planets.";
+
+    qDebug() << "Team 1: bot =" << team1_bot_file_name << " players = " << team1_num_players;
+    qDebug() << "Team 2: bot =" << team2_bot_file_name << " players = " << team2_num_players;
   } catch(const std::exception& e) {
     QMessageBox::critical(this, tr("Unable to start a battle"), QString(e.what()));
     qDebug() << "ERROR:" << e.what();
