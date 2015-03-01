@@ -1,5 +1,4 @@
-# TeamPlanets building script
-# TeamPlanets is an engine and bots for MachineZone candidates test
+# Various TeamPlanets bots building script
 #
 # Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 # All rights reserved.
@@ -29,22 +28,28 @@
 # SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
-project(teamplanets)
+project(teamplanets_bots)
 
-# Setting standard compiler options
-if(NOT TEAMPLANETS_COMPILER_OPTS_WAS_SET)
-  set(CMAKE_C_FLAGS "-march=native -Wall" CACHE STRING "" FORCE)
-  set(CMAKE_C_FLAGS_DEBUG "-O0 -g" CACHE STRING "" FORCE)
-  set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "" FORCE)
-  
-  set(CMAKE_CXX_FLAGS "-march=native -std=c++11 -Wall" CACHE STRING "" FORCE)
-  set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "" FORCE)
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "" FORCE)
-  
-  set(TEAMPLANETS_COMPILER_OPTS_WAS_SET ON CACHE INTERNAL "")
-endif(NOT TEAMPLANETS_COMPILER_OPTS_WAS_SET)
+# Common source files
+include_directories(${PROJECT_SOURCE_DIR}/../libs/libteamplanets/src)
 
-# Adding subprojects
-add_subdirectory(${PROJECT_SOURCE_DIR}/libs/libteamplanets)
-add_subdirectory(${PROJECT_SOURCE_DIR}/engine)
-add_subdirectory(${PROJECT_SOURCE_DIR}/bots)
+# Creating a target per bot directory
+execute_process(COMMAND find ${PROJECT_SOURCE_DIR} -mindepth 1 -type d -print
+                OUTPUT_VARIABLE bots_dirs)
+foreach(bot_dir_orig ${bots_dirs})
+  string(STRIP ${bot_dir_orig} bot_dir)
+  get_filename_component(bot_name ${bot_dir} NAME_WE)
+  
+  # Computing the list of this bots source files
+  file(GLOB_RECURSE src_files ${bot_dir}/*.cpp)
+  
+  # Creating the bots target
+  add_executable(${bot_name} ${src_files})
+  add_dependencies(${bot_name} teamplanets)
+  target_include_directories(${bot_name} PRIVATE ${bot_dir})
+  target_link_libraries(${bot_name} teamplanets)
+  
+  # Defining the bot installation rules
+  install(TARGETS ${bot_name}
+          RUNTIME DESTINATION bin)
+endforeach(bot_dir_orig)
