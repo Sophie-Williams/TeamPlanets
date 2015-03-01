@@ -1,4 +1,4 @@
-// mainwindow.hpp - Application main window definition
+// battlethread.hpp - BattleThread class definition
 // TeamPlanetsEngine - TeamPlanets game engine
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,56 +28,50 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
-#define _TEAMPLANETS_TEAMPLANETSENGINE_MAINWINDOW_HPP_
+#ifndef _TEAMPLANETS_TEAMPLANETSENGINE_BATTLETHREAD_HPP_
+#define _TEAMPLANETS_TEAMPLANETSENGINE_BATTLETHREAD_HPP_
 
-#include <QMainWindow>
-#include <QString>
+#include <QThread>
 #include <QMutex>
-#include "battlethread.hpp"
-#include "map.hpp"
-#include "ui_mainwindow.h"
+#include <QString>
+
+namespace team_planets { class Map; }
 
 namespace team_planets_engine {
-  class MainWindow: public QMainWindow {
+  class BattleThread: public QThread {
     Q_OBJECT
 
   public:
-    MainWindow(int argc, char* argv[], QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
+    BattleThread(const QString& map_file_name, const QString& team1_bot_file_name, unsigned int team1_num_players,
+                 const QString& team2_bot_file_name, unsigned int team2_num_players,
+                 QMutex& map_mutex, team_planets::Map& map, QObject* parent = nullptr);
+
+    void stop() { stop_mutex_.lock(); stop_ = true; stop_mutex_.unlock(); }
+
+  signals:
+    void map_updated();
+    void error_occured(const QString& msg);
 
   protected:
-    virtual void showEvent(QShowEvent* event);
-
-  private slots:
-    void startBattleActionTriggered_();
-    void quitActionTriggered_();
-
-    void battle_thread_map_updated_();
-    void battle_thread_error_occured(const QString& msg);
+    virtual void run();
 
   private:
-    Q_DISABLE_COPY(MainWindow)
+    Q_DISABLE_COPY(BattleThread)
 
-    void buildInterface_();
-    void connectSlots_();
+    // Thread management data
+    QMutex  stop_mutex_;
+    bool    stop_;
 
-    void parseCommandLine_();
-    void startNewBattle_(QString map_file_name,
-                         QString team1_bot_file_name, unsigned int team1_num_players,
-                         QString team2_bot_file_name, unsigned int team2_num_players);
+    // Battle configuration
+    const QString map_file_name_;
+    const QString team1_bot_file_name_;
+    const unsigned int team1_num_players_;
+    const QString team2_bot_file_name_;
+    const unsigned int team2_num_players_;
 
-    // User interface
-    Ui::MainWindow  ui_;
-
-    // Application command line
-    const int     argc_;
-    const char**  argv_;
-
-    // Application data
-    BattleThread*     battle_thread_;
-
-    QMutex            map_mutex_;
-    team_planets::Map map_;
+    // Battle map references
+    QMutex&             map_mutex_;
+    team_planets::Map&  map_;
   };
 }
 

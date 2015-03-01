@@ -35,7 +35,7 @@
 using namespace team_planets_engine;
 
 MainWindow::MainWindow(int argc, char* argv[], QWidget* parent, Qt::WindowFlags flags):
-  QMainWindow(parent, flags), argc_(argc), argv_((const char**)argv) {
+  QMainWindow(parent, flags), argc_(argc), argv_((const char**)argv), battle_thread_(nullptr) {
   buildInterface_();
   connectSlots_();
 }
@@ -61,7 +61,20 @@ void MainWindow::startBattleActionTriggered_() {
 }
 
 void MainWindow::quitActionTriggered_() {
+  if(battle_thread_) {
+    battle_thread_->stop();
+    battle_thread_->wait();
+  }
+
   qApp->quit();
+}
+
+void MainWindow::battle_thread_map_updated_() {
+  ui_.battleMap->update();
+}
+
+void MainWindow::battle_thread_error_occured(const QString& msg) {
+  QMessageBox::critical(this, tr("Battle error"), msg);
 }
 
 void MainWindow::buildInterface_() {
@@ -91,20 +104,20 @@ void MainWindow::parseCommandLine_() {
 void MainWindow::startNewBattle_(QString map_file_name,
                                  QString team1_bot_file_name, unsigned int team1_num_players,
                                  QString team2_bot_file_name, unsigned int team2_num_players) {
-  qDebug() << "Starting new battle...";
-
-  try {
-    map_.reset();
-
-    map_.load(map_file_name.toStdString());
-    ui_.battleMap->update();
-    qDebug() << "Loaded map from" << map_file_name << ":" << map_.num_planets() << " planets.";
-
-    qDebug() << "Team 1: bot =" << team1_bot_file_name << " players = " << team1_num_players;
-    qDebug() << "Team 2: bot =" << team2_bot_file_name << " players = " << team2_num_players;
-  } catch(const std::exception& e) {
-    QMessageBox::critical(this, tr("Unable to start a battle"), QString(e.what()));
-    qDebug() << "ERROR:" << e.what();
-    qDebug() << "Starting of a new battle was aborted due to an error!";
+  // Get rid of the current battle thread
+  if(battle_thread_) {
+    battle_thread_->stop();
+    battle_thread_->wait();
+    battle_thread_->deleteLater();
+    battle_thread_ = nullptr;
   }
+
+  // Starting the new battle
+  battle_thread_ = new BattleThread(map_file_name, team1_bot_file_name, team1_num_players,
+                                    team2_bot_file_name, team2_num_players, map_mutex_, map_,
+                                    this);
+  connect(battle_thread_, &BattleThread::map_updated, this, &MainWindow::battle_thread_map_updated_);
+  connect(battle_thread_, &BattleThread::error_occured, this, &MainWindow::battle_thread_error_occured);
+
+  battle_thread_->start();
 }
