@@ -32,6 +32,7 @@
 #define _TEAMPLANETS_LIBTEAMPLANETS_MAP_HPP_
 
 #include <cassert>
+#include <cstdint>
 #include <vector>
 #include <string>
 #include "planet.hpp"
@@ -48,6 +49,8 @@ namespace team_planets {
     typedef planets_list::const_iterator  planet_const_iterator;
     typedef fleets_list::iterator         fleet_iterator;
     typedef fleets_list::const_iterator   fleet_const_iterator;
+
+    Map(): myself_(neutral_player), message_(0) {}
 
     // Map loading functions
     void reset();
@@ -80,16 +83,37 @@ namespace team_planets {
     fleet_iterator fleets_end() { return fleets_.end(); }
     fleet_const_iterator fleets_end() const { return fleets_.end(); }
 
-    // Game mechanics implementation
-    void launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships);
+    // Accessors for bot
+    player_id myself() const { return myself_; }
+    uint32_t message() const { return message_; }
+    void set_message(uint32_t message) { message_ = message; }
 
-    // Game mechanics with validation (for the engine)
-    void launch_fleet_with_validation(player_id player, planet_id source, planet_id destination,
-                                      unsigned int num_ships);
+    // Game mechanics for bot
+    void bot_begin_turn();
+    void bot_end_turn();
+
+    void bot_launch_fleet(planet_id source, planet_id destination, unsigned int num_ships);
+
+    // Game mechanics for engine
+    void engine_launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships);
 
   private:
-    planets_list planets_;
-    fleets_list fleets_;
+    // Private common game mechanics
+    void update_fleets_();
+    void remove_arrived_fleets_();
+
+    // Private bot game mechanics
+    void read_bot_input_();
+    void write_bot_output_();
+
+    // Map description common for engine and bots
+    planets_list  planets_;
+    fleets_list   fleets_;
+
+    // Data specific for bots
+    player_id   myself_;
+    uint32_t    message_;
+    fleets_list pending_orders_;
   };
 }
 

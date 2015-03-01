@@ -29,7 +29,51 @@
 // SUCH DAMAGE.
 
 #include <cstdlib>
+#include <algorithm>
+#include "map.hpp"
+
+using namespace std;
+using namespace team_planets;
 
 int main(int argc, char* argv[]) {
+  Map map;
+
+  // The bot main loop
+  while(true) {
+    map.bot_begin_turn();
+
+    // If we have a fleet in flight, do nothing
+    if(map.num_fleets() == 0) {
+      // Search one of my planets having the more ships on it
+      planet_id source_planet = 0;
+      for_each(map.planets_begin(), map.planets_end(), [&map, &source_planet](const Planet& planet) {
+        if(planet.current_owner() == map.myself()) {
+          if(source_planet == 0) source_planet = planet.id();
+          else {
+            if(map.planet(source_planet).current_num_ships() < planet.current_num_ships())
+              source_planet = planet.id();
+          }
+        }
+      });
+
+      // Search one of enemy or neutral planets having the less ships on it
+      planet_id destination_planet = 0;
+      for_each(map.planets_begin(), map.planets_end(), [&map, &destination_planet](const Planet& planet) {
+        if(planet.current_owner() != map.myself()) {
+          if(destination_planet == 0) destination_planet = planet.id();
+          else {
+            if(map.planet(destination_planet).current_num_ships() > planet.current_num_ships())
+              destination_planet = planet.id();
+          }
+        }
+      });
+
+      // Sending the fleet (half the number of ships on the source planet)
+      map.bot_launch_fleet(source_planet, destination_planet, map.planet(source_planet).current_num_ships()/2);
+    }
+
+    map.bot_end_turn();
+  }
+
   return EXIT_SUCCESS;
 }

@@ -74,17 +74,37 @@ void Map::load(const string& file_name) {
   });
 }
 
-// Game mechanics implementation
-void Map::launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships) {
-  // Perform the launch
-  planet(source).remove_ships(num_ships);
-  fleets_.push_back(Fleet(player, source, destination, num_ships,
-                          planet(destination).compute_travel_distance(planet(source))));
+// Game mechanics for bot
+void Map::bot_begin_turn() {
+  // Clear the map before update
+  planets_.clear();
+  pending_orders_.clear();
+
+  // Reading the input from the engine
+  read_bot_input_();
+
+  // Updating game status
+  update_fleets_();
+  remove_arrived_fleets_();
 }
 
-// Game mechanics with validation (for the engine)
-void Map::launch_fleet_with_validation(player_id player, planet_id source, planet_id destination,
-                                       unsigned int num_ships) {
+void Map::bot_end_turn() {
+  write_bot_output_();
+}
+
+void Map::bot_launch_fleet(planet_id source, planet_id destination, unsigned int num_ships) {
+  // Perform the launch
+  planet(source).remove_ships(num_ships);
+  fleets_.push_back(Fleet(myself_, source, destination, num_ships,
+                          planet(destination).compute_travel_distance(planet(source))));
+
+  // Store the pending order
+  pending_orders_.push_back(Fleet(myself_, source, destination, num_ships,
+                            planet(destination).compute_travel_distance(planet(source))));
+}
+
+// Game mechanics for engine
+void Map::engine_launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships) {
   // Performing logical checks
   if(source == 0) throw logic_error("Fleet launch: Invalid source planet.");
   if(source > planets_.size()) throw logic_error("Fleet launch: Invalid source planet.");
@@ -96,5 +116,71 @@ void Map::launch_fleet_with_validation(player_id player, planet_id source, plane
     throw logic_error("Fleet launch: Source planet haven't enough ships.");
 
   // Performing the order
-  launch_fleet(player, source, destination, num_ships);
+  planet(source).remove_ships(num_ships);
+  fleets_.push_back(Fleet(player, source, destination, num_ships,
+                          planet(destination).compute_travel_distance(planet(source))));
+}
+
+// Private common game mechanics
+void Map::update_fleets_() {
+  for_each(fleets_.begin(), fleets_.end(), [](Fleet& fleet) {
+    fleet.advance();
+  });
+}
+
+void Map::remove_arrived_fleets_() {
+  fleet_iterator new_end = remove_if(fleets_.begin(), fleets_.end(), [](const Fleet& fleet) {
+    return fleet.remaining_turns() == 0;
+  });
+  fleets_.erase(new_end, fleets_.end());
+}
+
+// Private bot game mechanics
+void Map::read_bot_input_() {
+  string tag;
+  planets_list tmp_list;
+
+  do {
+    cin >> tag;
+
+    if(tag == string("P")) {
+      // Planet description line
+      Planet P;
+      cin >> P;
+      tmp_list.push_back(P);
+    }
+
+    if(tag == string("M")) {
+      // Message from the team
+      cin >> message_;
+    }
+
+    if(tag == string("Y")) {
+      // Current player identifier
+      cin >> myself_;
+    }
+  } while(tag != string("."));
+
+  // Placing planets at correct positions (even if there is holes in planet's IDs)
+  planet_id max_id = 0;
+  for_each(tmp_list.begin(), tmp_list.end(), [&max_id](const Planet& P) {
+    if(P.id() > max_id) max_id = P.id();
+  });
+
+  planets_.resize(max_id);
+  for_each(tmp_list.begin(), tmp_list.end(), [this](const Planet& P) {
+    planets_[P.id() - 1] = P;
+  });
+}
+
+void Map::write_bot_output_() {
+  // Writing pending orders
+  for_each(pending_orders_.begin(), pending_orders_.end(), [](const Fleet& fleet) {
+    cout << fleet << endl;
+  });
+
+  // Writing the message for the team
+  cout << "M " << message_ << endl;
+
+  cout << "." << endl;
 }

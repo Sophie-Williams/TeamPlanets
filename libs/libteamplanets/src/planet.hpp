@@ -89,7 +89,7 @@ namespace team_planets {
   template<typename charT, typename traits>
   std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Planet& P) {
     out << "P " << P.id_ << ' ' << P.location_ << ' ';
-    out << P.ship_increase_ << ' ' << P.current_owner_ << ' ' << P.current_num_ships_ << std::endl;
+    out << P.ship_increase_ << ' ' << P.current_owner_ << ' ' << P.current_num_ships_;
     return out;
   }
 

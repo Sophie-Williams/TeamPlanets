@@ -55,6 +55,11 @@ namespace team_planets {
     void advance() { assert(remaining_turns_ != 0); --remaining_turns_; }
 
   private:
+    template<typename charT, typename traits>
+    friend std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Fleet& F);
+    template<typename charT, typename traits>
+    friend std::basic_istream<charT,traits>& operator>>(std::basic_istream<charT,traits>& in, Fleet& F);
+
     // Constant fleet data
     player_id     player_;
     planet_id     source_;
@@ -64,6 +69,19 @@ namespace team_planets {
     // Variable fleet data
     unsigned int        remaining_turns_;
   };
+
+  // Input/output operators
+  template<typename charT, typename traits>
+  std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Fleet& F) {
+    out << "F " << F.source_ << " " << F.destination_ << " " << F.num_ships_;
+    return out;
+  }
+
+  template<typename charT, typename traits>
+  std::basic_istream<charT,traits>& operator>>(std::basic_istream<charT,traits>& in, Fleet& F) {
+    in >> F.source_ >> F.destination_ >> F.num_ships_;
+    return in;
+  }
 }
 
 #endif
