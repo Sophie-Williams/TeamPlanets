@@ -34,6 +34,7 @@
 #include <QThread>
 #include <QMutex>
 #include <QString>
+#include <QProcess>
 #include <cassert>
 #include <vector>
 #include "player.hpp"
@@ -76,11 +77,15 @@ namespace team_planets_engine {
   protected:
     virtual void run();
 
+  private slots:
+    void bot_error(QProcess::ProcessError error);
+
   private:
     Q_DISABLE_COPY(BattleThread)
 
     void create_players_();
     void update_players_();
+    void destroy_players_();
 
     // Thread management data
     QMutex  stop_mutex_;
@@ -99,7 +104,8 @@ namespace team_planets_engine {
 
     // Players and the associated bots
     QMutex        players_mutex_;
-    players_list  players_;
+    players_list            players_;
+    std::vector<QProcess*>  bots_;
   };
 }
 

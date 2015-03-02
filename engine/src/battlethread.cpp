@@ -62,16 +62,21 @@ void BattleThread::run() {
     create_players_();
     update_players_();
 
-    qDebug() << "Team 1: bot =" << team1_bot_file_name_ << " players = " << team1_num_players_;
-    qDebug() << "Team 2: bot =" << team2_bot_file_name_ << " players = " << team2_num_players_;
-
     // Battle main loop
     bool stop_requested = false;
     while(!stop_requested) {
+      // Manually process pending events
+      QCoreApplication::sendPostedEvents();
+      QCoreApplication::processEvents();
+
+      // Check if the thread must stop
       stop_mutex_.lock();
       stop_requested = stop_;
       stop_mutex_.unlock();
     }
+
+    // Clean up
+    destroy_players_();
   } catch(const std::exception& e) {
     emit error_occured(QString(e.what()));
     qDebug() << "ERROR:" << e.what();
@@ -81,9 +86,23 @@ void BattleThread::run() {
   qDebug() << "The battle is over.";
 }
 
+void BattleThread::bot_error(QProcess::ProcessError error) {
+  if(error == QProcess::Crashed) {
+    // One of the bots have crashed
+    players_mutex_.lock();
+    for(player_id id = 1; id <= players_.size(); ++id) {
+      if(players_[id - 1].status() == Player::Alive && bots_[id - 1]->state() == QProcess::NotRunning)
+        players_[id - 1].set_status(Player::Failed);
+    }
+    players_mutex_.unlock();
+  }
+}
+
 void BattleThread::create_players_() {
   players_mutex_.lock();
   players_.clear();
+
+  qRegisterMetaType<QProcess::ProcessError>("QProcess::ProcessError");
 
   // Creating the first team
   int cur_color = 255;
@@ -91,6 +110,13 @@ void BattleThread::create_players_() {
   for(unsigned int i = 0; i < team1_num_players_; ++i) {
     players_.push_back(Player(players_.size() + 1, 1, QColor(cur_color, 0, 0)));
     cur_color -= color_step;
+
+    qDebug() << "Starting bot " << team1_bot_file_name_ << " for player " << players_.back().id();
+    QProcess* player_process = new QProcess;
+    connect(player_process, SIGNAL(error(QProcess::ProcessError)), this, SLOT(bot_error(QProcess::ProcessError)));
+    player_process->start(team1_bot_file_name_);
+    if(!player_process->waitForStarted(10000)) players_.back().set_status(Player::Failed);
+    bots_.push_back(player_process);
   }
 
   // Creating the second team
@@ -99,6 +125,13 @@ void BattleThread::create_players_() {
   for(unsigned int i = 0; i < team2_num_players_; ++i) {
     players_.push_back(Player(players_.size() + 1, 2, QColor(0, 0, cur_color)));
     cur_color -= color_step;
+
+    qDebug() << "Starting bot " << team2_bot_file_name_ << " for player " << players_.back().id();
+    QProcess* player_process = new QProcess;
+    connect(player_process, SIGNAL(error(QProcess::ProcessError)), this, SLOT(bot_error(QProcess::ProcessError)));
+    player_process->start(team2_bot_file_name_);
+    if(!player_process->waitForStarted(10000)) players_.back().set_status(Player::Failed);
+    bots_.push_back(player_process);
   }
 
   players_mutex_.unlock();
@@ -130,4 +163,15 @@ void BattleThread::update_players_() {
   map_mutex_.unlock();
 
   players_mutex_.unlock();
+}
+
+void BattleThread::destroy_players_() {
+  qDebug() << "Terminating bots...";
+  for(QProcess* bot:bots_) {
+    bot->terminate();
+    if(!bot->waitForFinished(1000)) bot->kill();
+    delete bot;
+  }
+
+  bots_.clear();
 }

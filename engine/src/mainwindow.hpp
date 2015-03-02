@@ -47,6 +47,7 @@ namespace team_planets_engine {
 
   protected:
     virtual void showEvent(QShowEvent* event);
+    virtual void closeEvent(QCloseEvent* event);
 
   private slots:
     void startBattleActionTriggered_();
@@ -65,6 +66,7 @@ namespace team_planets_engine {
     void startNewBattle_(QString map_file_name,
                          QString team1_bot_file_name, unsigned int team1_num_players,
                          QString team2_bot_file_name, unsigned int team2_num_players);
+    void stopBattle_();
 
     void update_teams_tables_();
 

@@ -51,6 +51,10 @@ void MainWindow::showEvent(QShowEvent* event) {
   }
 }
 
+void MainWindow::closeEvent(QCloseEvent* event) {
+  stopBattle_();
+}
+
 void MainWindow::startBattleActionTriggered_() {
   static StartBattleDialog* dialog  = nullptr;
   if(!dialog) dialog = new StartBattleDialog(this);
@@ -62,11 +66,7 @@ void MainWindow::startBattleActionTriggered_() {
 }
 
 void MainWindow::quitActionTriggered_() {
-  if(battle_thread_) {
-    battle_thread_->stop();
-    battle_thread_->wait();
-  }
-
+  stopBattle_();
   qApp->quit();
 }
 
@@ -123,6 +123,13 @@ void MainWindow::startNewBattle_(QString map_file_name,
 
   ui_.battleMap->set_battle_thread(battle_thread_);
   battle_thread_->start();
+}
+
+void MainWindow::stopBattle_() {
+  if(battle_thread_) {
+    battle_thread_->stop();
+    battle_thread_->wait();
+  }
 }
 
 void MainWindow::update_teams_tables_() {
