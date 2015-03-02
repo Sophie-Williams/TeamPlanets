@@ -30,6 +30,7 @@
 
 #include <QtCore>
 #include <algorithm>
+#include <sstream>
 #include "map.hpp"
 #include "battlethread.hpp"
 
@@ -68,6 +69,13 @@ void BattleThread::run() {
       // Manually process pending events
       QCoreApplication::sendPostedEvents();
       QCoreApplication::processEvents();
+
+      // Ask the bots and perform their orders
+      ask_players_();
+
+      // Update UI
+      emit map_updated();
+      sleep(1);
 
       // Check if the thread must stop
       stop_mutex_.lock();
@@ -137,6 +145,20 @@ void BattleThread::create_players_() {
   players_mutex_.unlock();
 }
 
+void BattleThread::ask_players_() {
+  players_mutex_.lock();
+
+  for(player_id id = 1; id <= players_.size(); ++id) {
+    if(players_[id - 1].status() == Player::Alive) {
+      const QString command = generate_bot_input_(id);
+      const QString response = perform_bot_io_(id, command);
+      process_bot_output_(id, response);
+    }
+  }
+
+  players_mutex_.unlock();
+}
+
 void BattleThread::update_players_() {
   players_mutex_.lock();
 
@@ -174,4 +196,62 @@ void BattleThread::destroy_players_() {
   }
 
   bots_.clear();
+}
+
+QString BattleThread::generate_bot_input_(player_id id) {
+  stringstream cmd;
+
+  map_mutex_.lock();
+  for_each(map_.planets_begin(), map_.planets_end(), [&cmd](const Planet& planet) {
+    cmd << planet << endl;
+  });
+  map_mutex_.unlock();
+
+  cmd << "M 0" << endl;
+  cmd << "Y " << id << endl;
+  cmd << "." << endl;
+
+  return QString::fromStdString(cmd.str());
+}
+
+QString BattleThread::perform_bot_io_(player_id id, const QString& bot_input) {
+  // Writing the input to the bot
+  qDebug() << "Input for player " << id << ":";
+  qDebug() << bot_input;
+
+  QTextStream bot_io(bots_[id - 1]);
+  bot_io << bot_input;
+  bot_io.flush();
+
+  // Reading the bot output
+  qint64 start_time = QDateTime::currentMSecsSinceEpoch();
+  qint64 end_time;
+
+  qDebug() << "Output of player " << id << ":";
+  QString response;
+  QString tmp;
+  do {
+    bots_[id - 1]->waitForReadyRead(100);
+    tmp = bot_io.readAll();
+    end_time = QDateTime::currentMSecsSinceEpoch();
+
+    response += tmp;
+  } while(tmp[tmp.size() - 2] != QChar('.') && end_time - start_time <= 1000);
+
+  qDebug() << response;
+  players_[id - 1].set_ping(end_time - start_time);
+  if(end_time - start_time >= 1000) kill_misbehaving_bot_(id);
+
+  return response;
+}
+
+void BattleThread::process_bot_output_(player_id id, const QString& bot_output) {
+}
+
+void BattleThread::kill_misbehaving_bot_(player_id id) {
+  if(players_[id - 1].status() == Player::Alive) {
+    qDebug() << "Player " << id <<" was terminated!";
+    bots_[id - 1]->kill();
+    players_[id - 1].set_status(Player::Failed);
+  }
 }

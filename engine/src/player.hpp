@@ -52,6 +52,9 @@ namespace team_planets_engine {
     unsigned int num_ships() const { return num_ships_; }
     void set_num_ships(unsigned int num_ships) { num_ships_ = num_ships; }
 
+    unsigned int ping() const { return ping_; }
+    void set_ping(unsigned int ping) { ping_ = ping; }
+
   private:
     // Player properties
     team_planets::player_id id_;
@@ -62,6 +65,8 @@ namespace team_planets_engine {
     Status                  status_;
     unsigned int            num_planets_;
     unsigned int            num_ships_;
+
+    unsigned int            ping_;
   };
 }
 

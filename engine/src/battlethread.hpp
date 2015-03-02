@@ -84,8 +84,15 @@ namespace team_planets_engine {
     Q_DISABLE_COPY(BattleThread)
 
     void create_players_();
+    void ask_players_();
     void update_players_();
     void destroy_players_();
+
+    QString generate_bot_input_(team_planets::player_id id);
+    QString perform_bot_io_(team_planets::player_id id, const QString& bot_input);
+    void process_bot_output_(team_planets::player_id id, const QString& bot_output);
+
+    void kill_misbehaving_bot_(team_planets::player_id id);
 
     // Thread management data
     QMutex  stop_mutex_;

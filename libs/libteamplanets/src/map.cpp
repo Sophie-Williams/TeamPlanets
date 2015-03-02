@@ -183,4 +183,5 @@ void Map::write_bot_output_() {
   cout << "M " << message_ << endl;
 
   cout << "." << endl;
+  cout.flush();
 }

@@ -134,19 +134,19 @@ void MainWindow::stopBattle_() {
 
 void MainWindow::update_teams_tables_() {
   QStringList header;
-  header << "ID" << "C" << "S" << "Planets" << "Ships";
+  header << "ID" << "C" << "S" << "Planets" << "Ships" << "Ping (ms)";
 
   if(battle_thread_) {
     // Updating the first team table
     ui_.team1Table->clear();
-    ui_.team1Table->setColumnCount(5);
+    ui_.team1Table->setColumnCount(6);
     ui_.team1Table->setRowCount(battle_thread_->team1_num_players());
     ui_.team1Table->setHorizontalHeaderLabels(header);
     ui_.team1Table->verticalHeader()->hide();
 
     // Updating the second team table
     ui_.team2Table->clear();
-    ui_.team2Table->setColumnCount(5);
+    ui_.team2Table->setColumnCount(6);
     ui_.team2Table->setRowCount(battle_thread_->team2_num_players());
     ui_.team2Table->setHorizontalHeaderLabels(header);
     ui_.team2Table->verticalHeader()->hide();
@@ -170,6 +170,7 @@ void MainWindow::update_teams_tables_() {
 
       QTableWidgetItem* planets_item = new QTableWidgetItem(QString("%1").arg(player.num_planets()));
       QTableWidgetItem* ships_item = new QTableWidgetItem(QString("%1").arg(player.num_ships()));
+      QTableWidgetItem* ping_item = new QTableWidgetItem(QString("%1").arg(player.ping()));
 
       if(player.team() == 1) {
         ui_.team1Table->setItem(team1_row, 0, id_item);
@@ -177,6 +178,7 @@ void MainWindow::update_teams_tables_() {
         ui_.team1Table->setItem(team1_row, 2, status_item);
         ui_.team1Table->setItem(team1_row, 3, planets_item);
         ui_.team1Table->setItem(team1_row, 4, ships_item);
+        ui_.team1Table->setItem(team1_row, 5, ping_item);
         ++team1_row;
       } else {
         ui_.team2Table->setItem(team2_row, 0, id_item);
@@ -184,6 +186,7 @@ void MainWindow::update_teams_tables_() {
         ui_.team2Table->setItem(team2_row, 2, status_item);
         ui_.team2Table->setItem(team2_row, 3, planets_item);
         ui_.team2Table->setItem(team2_row, 4, ships_item);
+        ui_.team2Table->setItem(team2_row, 5, ping_item);
         ++team2_row;
       }
     });
