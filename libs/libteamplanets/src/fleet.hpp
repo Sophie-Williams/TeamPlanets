@@ -37,6 +37,9 @@
 namespace team_planets {
   class Fleet {
   public:
+    Fleet():
+      player_(neutral_player), source_(0), destination_(0),
+      num_ships_(0), remaining_turns_(0) {}
     Fleet(player_id player, planet_id source, planet_id destination,
           unsigned int num_ships, unsigned int remaining_turns):
       player_(player), source_(source), destination_(destination),

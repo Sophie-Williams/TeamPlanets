@@ -246,6 +246,31 @@ QString BattleThread::perform_bot_io_(player_id id, const QString& bot_input) {
 }
 
 void BattleThread::process_bot_output_(player_id id, const QString& bot_output) {
+  stringstream in;
+  in.str(bot_output.toStdString());
+
+  string tag;
+  do {
+    in >> tag;
+
+    if(tag == string("F")) {
+      Fleet fleet;
+      in >> fleet;
+
+      map_mutex_.lock();
+      try {
+        map_.engine_launch_fleet(id, fleet.source(), fleet.destination(), fleet.num_ships());
+      } catch(const exception& e) {
+        kill_misbehaving_bot_(id);
+      }
+      map_mutex_.unlock();
+    }
+
+    if(tag == string("M")) {
+      uint32_t msg;
+      in >> msg;
+    }
+  } while(tag != string("."));
 }
 
 void BattleThread::kill_misbehaving_bot_(player_id id) {
