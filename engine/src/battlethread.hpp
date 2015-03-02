@@ -34,6 +34,9 @@
 #include <QThread>
 #include <QMutex>
 #include <QString>
+#include <cassert>
+#include <vector>
+#include "player.hpp"
 
 namespace team_planets { class Map; }
 
@@ -41,12 +44,26 @@ namespace team_planets_engine {
   class BattleThread: public QThread {
     Q_OBJECT
 
+  private:
+    typedef std::vector<Player> players_list;
+
   public:
+    typedef players_list::const_iterator  player_const_iterator;
+
     BattleThread(const QString& map_file_name, const QString& team1_bot_file_name, unsigned int team1_num_players,
                  const QString& team2_bot_file_name, unsigned int team2_num_players,
                  QMutex& map_mutex, team_planets::Map& map, QObject* parent = nullptr);
 
     void stop() { stop_mutex_.lock(); stop_ = true; stop_mutex_.unlock(); }
+
+    // Players list accessors
+    void lock_players() { players_mutex_.lock(); }
+    void unlock_players() { players_mutex_.unlock(); }
+
+    std::size_t num_players() const { return players_.size(); }
+    const Player& player(team_planets::player_id id) const { assert(id != 0); return players_[id - 1]; }
+    player_const_iterator players_begin() const { return players_.begin(); }
+    player_const_iterator players_end() const { return players_.end(); }
 
   signals:
     void map_updated();
@@ -57,6 +74,9 @@ namespace team_planets_engine {
 
   private:
     Q_DISABLE_COPY(BattleThread)
+
+    void create_players_();
+    void update_players_();
 
     // Thread management data
     QMutex  stop_mutex_;
@@ -72,6 +92,10 @@ namespace team_planets_engine {
     // Battle map references
     QMutex&             map_mutex_;
     team_planets::Map&  map_;
+
+    // Players and the associated bots
+    QMutex        players_mutex_;
+    players_list  players_;
   };
 }
 

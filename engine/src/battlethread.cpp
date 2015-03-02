@@ -29,9 +29,11 @@
 // SUCH DAMAGE.
 
 #include <QtCore>
+#include <algorithm>
 #include "map.hpp"
 #include "battlethread.hpp"
 
+using namespace std;
 using namespace team_planets;
 using namespace team_planets_engine;
 
@@ -56,6 +58,10 @@ void BattleThread::run() {
     map_mutex_.unlock();
     emit map_updated();
 
+    // Creating the players
+    create_players_();
+    update_players_();
+
     qDebug() << "Team 1: bot =" << team1_bot_file_name_ << " players = " << team1_num_players_;
     qDebug() << "Team 2: bot =" << team2_bot_file_name_ << " players = " << team2_num_players_;
 
@@ -73,4 +79,53 @@ void BattleThread::run() {
   }
 
   qDebug() << "The battle is over.";
+}
+
+void BattleThread::create_players_() {
+  players_mutex_.lock();
+  players_.clear();
+
+  // Creating the first team
+  int cur_color = 255;
+  for(unsigned int i = 0; i < team1_num_players_; ++i) {
+    players_.push_back(Player(players_.size() + 1, 1, QColor(cur_color, 0, 0)));
+    cur_color -= 10;
+  }
+
+  // Creating the second team
+  cur_color = 255;
+  for(unsigned int i = 0; i < team2_num_players_; ++i) {
+    players_.push_back(Player(players_.size() + 1, 2, QColor(0, 0, cur_color)));
+    cur_color -= 10;
+  }
+
+  players_mutex_.unlock();
+}
+
+void BattleThread::update_players_() {
+  players_mutex_.lock();
+
+  // Reset the player statistics
+  for(Player& player : players_) {
+    player.set_num_planets(0);
+    player.set_num_ships(0);
+  }
+
+  // Updating
+  map_mutex_.lock();
+  for_each(map_.planets_begin(), map_.planets_end(), [this](const Planet& planet) {
+    if(planet.current_owner() != neutral_player) {
+      Player& owner = players_[planet.current_owner() - 1];
+      owner.set_num_planets(owner.num_planets() + 1);
+      owner.set_num_ships(owner.num_ships() + planet.current_num_ships());
+    }
+  });
+
+  for_each(map_.fleets_begin(), map_.fleets_end(), [this](const Fleet& fleet) {
+    Player& owner = players_[fleet.player() - 1];
+    owner.set_num_ships(owner.num_ships() + fleet.num_ships());
+  });
+  map_mutex_.unlock();
+
+  players_mutex_.unlock();
 }
