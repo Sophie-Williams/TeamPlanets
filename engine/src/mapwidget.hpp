@@ -38,6 +38,8 @@ class QMutex;
 namespace team_planets { class Map; class Planet; class Fleet; }
 
 namespace team_planets_engine {
+  class BattleThread;
+
   class MapWidget: public QWidget {
     Q_OBJECT
     Q_PROPERTY(QColor background_color READ background_color WRITE set_background_color)
@@ -56,6 +58,7 @@ namespace team_planets_engine {
       map_mutex_ = &map_mutex;
       map_ = &map;
     }
+    void set_battle_thread(BattleThread* thread) { battle_thread_ = thread; }
 
     // Different map colors accessors
     QColor background_color() const { return background_color_; }
@@ -87,9 +90,10 @@ namespace team_planets_engine {
     void draw_planet_(QPainter& painter, const team_planets::Planet& planet);
     void draw_fleet_(QPainter& painter, const team_planets::Fleet& fleet);
 
-    // The battle map
+    // The battle map and thread
     QMutex*             map_mutex_;
     team_planets::Map*  map_;
+    BattleThread*       battle_thread_;
 
     // Different map colors and properties
     QColor  background_color_;

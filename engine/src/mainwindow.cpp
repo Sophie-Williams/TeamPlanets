@@ -121,6 +121,7 @@ void MainWindow::startNewBattle_(QString map_file_name,
   connect(battle_thread_, &BattleThread::map_updated, this, &MainWindow::battle_thread_map_updated_);
   connect(battle_thread_, &BattleThread::error_occured, this, &MainWindow::battle_thread_error_occured);
 
+  ui_.battleMap->set_battle_thread(battle_thread_);
   battle_thread_->start();
 }
 
