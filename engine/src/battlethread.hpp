@@ -56,6 +56,10 @@ namespace team_planets_engine {
 
     void stop() { stop_mutex_.lock(); stop_ = true; stop_mutex_.unlock(); }
 
+    // Battle configuration statistics
+    unsigned int team1_num_players() const { return team1_num_players_; }
+    unsigned int team2_num_players() const { return team2_num_players_; }
+
     // Players list accessors
     void lock_players() { players_mutex_.lock(); }
     void unlock_players() { players_mutex_.unlock(); }

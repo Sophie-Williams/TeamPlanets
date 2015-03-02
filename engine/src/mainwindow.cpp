@@ -29,6 +29,7 @@
 // SUCH DAMAGE.
 
 #include <QtWidgets>
+#include <algorithm>
 #include "startbattledialog.hpp"
 #include "mainwindow.hpp"
 
@@ -70,6 +71,7 @@ void MainWindow::quitActionTriggered_() {
 }
 
 void MainWindow::battle_thread_map_updated_() {
+  update_teams_tables_();
   ui_.battleMap->update();
 }
 
@@ -120,4 +122,66 @@ void MainWindow::startNewBattle_(QString map_file_name,
   connect(battle_thread_, &BattleThread::error_occured, this, &MainWindow::battle_thread_error_occured);
 
   battle_thread_->start();
+}
+
+void MainWindow::update_teams_tables_() {
+  QStringList header;
+  header << "ID" << "C" << "S" << "Planets" << "Ships";
+
+  if(battle_thread_) {
+    // Updating the first team table
+    ui_.team1Table->clear();
+    ui_.team1Table->setColumnCount(5);
+    ui_.team1Table->setRowCount(battle_thread_->team1_num_players());
+    ui_.team1Table->setHorizontalHeaderLabels(header);
+    ui_.team1Table->verticalHeader()->hide();
+
+    // Updating the second team table
+    ui_.team2Table->clear();
+    ui_.team2Table->setColumnCount(5);
+    ui_.team2Table->setRowCount(battle_thread_->team2_num_players());
+    ui_.team2Table->setHorizontalHeaderLabels(header);
+    ui_.team2Table->verticalHeader()->hide();
+
+    // Filling in the content
+    int team1_row = 0, team2_row = 0;
+
+    battle_thread_->lock_players();
+    std::for_each(battle_thread_->players_begin(), battle_thread_->players_end(),
+                  [this,&team1_row,&team2_row](const Player& player) {
+      QTableWidgetItem* id_item = new QTableWidgetItem(QString("%1").arg(player.id()));
+      QTableWidgetItem* color_item = new QTableWidgetItem;
+      color_item->setBackgroundColor(player.color());
+
+      QTableWidgetItem* status_item = nullptr;
+      switch(player.status()) {
+      case Player::Alive: status_item =  new QTableWidgetItem(tr("A")); break;
+      case Player::Dead: status_item =  new QTableWidgetItem(tr("D")); break;
+      case Player::Failed: status_item =  new QTableWidgetItem(tr("F")); break;
+      }
+
+      QTableWidgetItem* planets_item = new QTableWidgetItem(QString("%1").arg(player.num_planets()));
+      QTableWidgetItem* ships_item = new QTableWidgetItem(QString("%1").arg(player.num_ships()));
+
+      if(player.team() == 1) {
+        ui_.team1Table->setItem(team1_row, 0, id_item);
+        ui_.team1Table->setItem(team1_row, 1, color_item);
+        ui_.team1Table->setItem(team1_row, 2, status_item);
+        ui_.team1Table->setItem(team1_row, 3, planets_item);
+        ui_.team1Table->setItem(team1_row, 4, ships_item);
+        ++team1_row;
+      } else {
+        ui_.team2Table->setItem(team2_row, 0, id_item);
+        ui_.team2Table->setItem(team2_row, 1, color_item);
+        ui_.team2Table->setItem(team2_row, 2, status_item);
+        ui_.team2Table->setItem(team2_row, 3, planets_item);
+        ui_.team2Table->setItem(team2_row, 4, ships_item);
+        ++team2_row;
+      }
+    });
+    battle_thread_->unlock_players();
+
+    ui_.team1Table->resizeColumnsToContents();
+    ui_.team2Table->resizeColumnsToContents();
+  }
 }

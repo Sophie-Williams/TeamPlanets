@@ -87,16 +87,18 @@ void BattleThread::create_players_() {
 
   // Creating the first team
   int cur_color = 255;
+  int color_step = 200/team1_num_players_;
   for(unsigned int i = 0; i < team1_num_players_; ++i) {
     players_.push_back(Player(players_.size() + 1, 1, QColor(cur_color, 0, 0)));
-    cur_color -= 10;
+    cur_color -= color_step;
   }
 
   // Creating the second team
   cur_color = 255;
+  color_step = 200/team2_num_players_;
   for(unsigned int i = 0; i < team2_num_players_; ++i) {
     players_.push_back(Player(players_.size() + 1, 2, QColor(0, 0, cur_color)));
-    cur_color -= 10;
+    cur_color -= color_step;
   }
 
   players_mutex_.unlock();

@@ -66,6 +66,8 @@ namespace team_planets_engine {
                          QString team1_bot_file_name, unsigned int team1_num_players,
                          QString team2_bot_file_name, unsigned int team2_num_players);
 
+    void update_teams_tables_();
+
     // User interface
     Ui::MainWindow  ui_;
 
