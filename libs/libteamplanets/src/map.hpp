@@ -95,12 +95,15 @@ namespace team_planets {
     void bot_launch_fleet(planet_id source, planet_id destination, unsigned int num_ships);
 
     // Game mechanics for engine
+    void engine_perform_turn();
     void engine_launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships);
 
   private:
     // Private common game mechanics
     void update_fleets_();
     void remove_arrived_fleets_();
+
+    void update_planets_();
 
     // Private bot game mechanics
     void read_bot_input_();

@@ -73,7 +73,13 @@ void BattleThread::run() {
       // Ask the bots and perform their orders
       ask_players_();
 
+      // Performing the turn
+      map_mutex_.lock();
+      map_.engine_perform_turn();
+      map_mutex_.unlock();
+
       // Update UI
+      update_players_();
       emit map_updated();
       sleep(1);
 
@@ -190,6 +196,7 @@ void BattleThread::update_players_() {
 void BattleThread::destroy_players_() {
   qDebug() << "Terminating bots...";
   for(QProcess* bot:bots_) {
+    disconnect(bot, 0, 0, 0);
     bot->terminate();
     if(!bot->waitForFinished(1000)) bot->kill();
     delete bot;

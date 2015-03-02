@@ -104,6 +104,12 @@ void Map::bot_launch_fleet(planet_id source, planet_id destination, unsigned int
 }
 
 // Game mechanics for engine
+void Map::engine_perform_turn() {
+  update_fleets_();
+  remove_arrived_fleets_();
+  update_planets_();
+}
+
 void Map::engine_launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships) {
   // Performing logical checks
   if(source == 0) throw logic_error("Fleet launch: Invalid source planet.");
@@ -133,6 +139,12 @@ void Map::remove_arrived_fleets_() {
     return fleet.remaining_turns() == 0;
   });
   fleets_.erase(new_end, fleets_.end());
+}
+
+void Map::update_planets_() {
+  for_each(planets_.begin(), planets_.end(), [](Planet& planet) {
+    planet.produce_new_ships();
+  });
 }
 
 // Private bot game mechanics
