@@ -87,6 +87,8 @@ namespace team_planets_engine {
     void cleanup_map_();
     void ask_players_();
     void update_players_();
+    void eliminate_dead_players_();
+    bool check_victory_();
     void destroy_players_();
 
     QString generate_bot_input_(team_planets::player_id id);

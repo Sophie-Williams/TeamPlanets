@@ -66,7 +66,8 @@ void BattleThread::run() {
 
     // Battle main loop
     bool stop_requested = false;
-    while(!stop_requested) {
+    bool battle_is_over = false;
+    while(!stop_requested && !battle_is_over) {
       // Manually process pending events
       QCoreApplication::sendPostedEvents();
       QCoreApplication::processEvents();
@@ -79,8 +80,12 @@ void BattleThread::run() {
       map_.engine_perform_turn();
       map_mutex_.unlock();
 
-      // Update UI
+      // Updating players and eliminating dead ones
       update_players_();
+      eliminate_dead_players_();
+      battle_is_over = check_victory_();
+
+      // Update UI
       emit map_updated();
       sleep(1);
 
@@ -106,8 +111,19 @@ void BattleThread::bot_error(QProcess::ProcessError error) {
     // One of the bots have crashed
     players_mutex_.lock();
     for(player_id id = 1; id <= players_.size(); ++id) {
-      if(players_[id - 1].status() == Player::Alive && bots_[id - 1]->state() == QProcess::NotRunning)
+      if(players_[id - 1].status() == Player::Alive && bots_[id - 1]->state() == QProcess::NotRunning) {
         players_[id - 1].set_status(Player::Failed);
+        players_[id - 1].set_num_planets(0);
+        players_[id - 1].set_num_ships(0);
+
+        map_mutex_.lock();
+        for_each(map_.planets_begin(), map_.planets_end(), [id](Planet& planet) {
+          if(planet.current_owner() == id) planet.set_current_owner(neutral_player);
+        });
+
+        map_.engine_eliminate_player_fleets(id);
+        map_mutex_.unlock();
+      }
     }
     players_mutex_.unlock();
   }
@@ -201,6 +217,46 @@ void BattleThread::update_players_() {
   map_mutex_.unlock();
 
   players_mutex_.unlock();
+}
+
+void BattleThread::eliminate_dead_players_() {
+  players_mutex_.lock();
+
+  for(player_id id = 1; id <= players_.size(); ++id) {
+    if(players_[id - 1].status() == Player::Alive && players_[id - 1].num_planets() == 0) {
+      // The player is dead!
+      players_[id - 1].set_status(Player::Dead);
+
+      // Terminating bot
+      disconnect(bots_[id - 1], 0, 0, 0);
+      bots_[id - 1]->terminate();
+      if(!bots_[id - 1]->waitForFinished(1000)) bots_[id - 1]->kill();
+
+      // Eliminating remaining fleets
+      map_mutex_.lock();
+      map_.engine_eliminate_player_fleets(id);
+      map_mutex_.unlock();
+      players_[id - 1].set_num_ships(0);
+    }
+  }
+
+  players_mutex_.unlock();
+}
+
+bool BattleThread::check_victory_() {
+  unsigned int team1_alive_players = 0;
+  unsigned int team2_alive_players = 0;
+
+  players_mutex_.lock();
+  for(const Player& player:players_) {
+    if(player.status() == Player::Alive) {
+      if(player.team() == 1) ++team1_alive_players;
+      else ++team2_alive_players;
+    }
+  }
+  players_mutex_.unlock();
+
+  return !team1_alive_players || !team2_alive_players;
 }
 
 void BattleThread::destroy_players_() {

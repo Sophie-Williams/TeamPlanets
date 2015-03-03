@@ -128,6 +128,13 @@ void Map::engine_launch_fleet(player_id player, planet_id source, planet_id dest
                           planet(destination).compute_travel_distance(planet(source))));
 }
 
+void Map::engine_eliminate_player_fleets(player_id player) {
+  fleet_iterator new_end = remove_if(fleets_.begin(), fleets_.end(), [player](const Fleet& fleet) {
+    return fleet.player() == player;
+  });
+  fleets_.erase(new_end, fleets_.end());
+}
+
 // Private common game mechanics
 void Map::update_fleets_() {
   for_each(fleets_.begin(), fleets_.end(), [](Fleet& fleet) {

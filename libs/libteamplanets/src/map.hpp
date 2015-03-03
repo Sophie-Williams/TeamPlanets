@@ -97,6 +97,7 @@ namespace team_planets {
     // Game mechanics for engine
     void engine_perform_turn();
     void engine_launch_fleet(player_id player, planet_id source, planet_id destination, unsigned int num_ships);
+    void engine_eliminate_player_fleets(player_id player);
 
   private:
     // Private common game mechanics
