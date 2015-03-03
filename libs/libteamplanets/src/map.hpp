@@ -103,6 +103,8 @@ namespace team_planets {
     void update_fleets_();
     void remove_arrived_fleets_();
 
+    void perform_battles_();
+
     void update_planets_();
 
     // Private bot game mechanics

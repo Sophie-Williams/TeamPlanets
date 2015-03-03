@@ -106,6 +106,7 @@ void Map::bot_launch_fleet(planet_id source, planet_id destination, unsigned int
 // Game mechanics for engine
 void Map::engine_perform_turn() {
   update_fleets_();
+  perform_battles_();
   remove_arrived_fleets_();
   update_planets_();
 }
@@ -141,9 +142,82 @@ void Map::remove_arrived_fleets_() {
   fleets_.erase(new_end, fleets_.end());
 }
 
+void Map::perform_battles_() {
+  // Structure describing a force arrived at the planet
+  struct Force {
+    player_id     player;
+    unsigned int  num_ships;
+  };
+  typedef vector<Force>       forces_list;
+  typedef vector<forces_list> planetary_forces_list;
+
+  // Initializing the list of forces
+  planetary_forces_list forces_per_planet;
+  forces_per_planet.resize(planets_.size());
+  for(planet_id id = 1; id <= planets_.size(); ++id) {
+    forces_list& forces = forces_per_planet[id - 1];
+    forces.push_back(Force());
+    forces.back().player = planets_[id - 1].current_owner();
+    forces.back().num_ships = planets_[id - 1].current_num_ships();
+  }
+
+  // Classifying arrived fleets by planets and creating forces
+  for(const Fleet& fleet:fleets_) {
+    if(fleet.remaining_turns() == 0) {
+      forces_list& forces = forces_per_planet[fleet.destination() - 1];
+
+      // Searching player force
+      Force* player_force = nullptr;
+      bool   found        = false;
+      for(Force& force:forces) {
+        if(force.player == fleet.player()) {
+          player_force = &force;
+          found = true;
+        }
+      }
+
+      // Updating the force accrodingly
+      if(found) player_force->num_ships += fleet.num_ships();
+      else {
+        forces.push_back(Force());
+        forces.back().player = fleet.player();
+        forces.back().num_ships = fleet.num_ships();
+      }
+    }
+  }
+
+  // Performing battles
+  for(planet_id id = 1; id <= forces_per_planet.size(); ++id) {
+    Planet& planet = planets_[id - 1];
+    forces_list& forces = forces_per_planet[id - 1];
+
+    if(forces.size() > 1) {
+      // Searching the largest and second largest force
+      size_t max_force = 0, second_max = 1;
+      for(size_t i = 1; i < forces.size(); ++i) {
+        if(forces[i].num_ships >= forces[max_force].num_ships) {
+          second_max = max_force;
+          max_force = i;
+        }
+      }
+
+      // If the forces are equal, current owner keeps the planet
+      if(forces[max_force].num_ships == forces[second_max].num_ships) planet.set_current_num_ships(0);
+      else {
+        // Max force wins the planet
+        planet.set_current_owner(forces[max_force].player);
+        planet.set_current_num_ships(forces[max_force].num_ships - forces[second_max].num_ships);
+      }
+    } else {
+      // The force returns to the planet
+      planet.set_current_num_ships(forces[0].num_ships);
+    }
+  }
+}
+
 void Map::update_planets_() {
   for_each(planets_.begin(), planets_.end(), [](Planet& planet) {
-    planet.produce_new_ships();
+    if(planet.current_owner() != neutral_player) planet.produce_new_ships();
   });
 }
 
