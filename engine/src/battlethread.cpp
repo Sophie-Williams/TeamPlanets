@@ -328,11 +328,25 @@ QString BattleThread::generate_bot_input_(player_id id) {
   });
   map_mutex_.unlock();
 
-  cmd << "M 0" << endl;
+  cmd << "M " << find_team_message(id) << endl;
   cmd << "Y " << id << endl;
   cmd << "." << endl;
 
   return QString::fromStdString(cmd.str());
+}
+
+uint32_t BattleThread::find_team_message(player_id id) {
+  // Searching for previous ally
+  player_id cur_id = id;
+  bool      ally_found = false;
+  do {
+    --cur_id;
+    if(cur_id == 0) cur_id = players_.size();
+    if(players_[cur_id - 1].team() == players_[id - 1].team()) ally_found = true;
+  } while(!ally_found && cur_id != id);
+
+  if(ally_found) return players_[cur_id - 1].message();
+  else return players_[id - 1].message();
 }
 
 QString BattleThread::perform_bot_io_(player_id id, const QString& bot_input) {
@@ -390,6 +404,7 @@ void BattleThread::process_bot_output_(player_id id, const QString& bot_output) 
     if(tag == string("M")) {
       uint32_t msg;
       in >> msg;
+      players_[id - 1].set_message(msg);
     }
   } while(tag != string("."));
 }

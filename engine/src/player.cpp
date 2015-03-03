@@ -35,5 +35,5 @@ using namespace team_planets_engine;
 
 Player::Player(player_id id, unsigned int team, QColor color):
     id_(id), team_(team), color_(color), status_(Alive),
-    num_planets_(0), num_ships_(0) {
+    num_planets_(0), num_ships_(0), message_(0) {
 }

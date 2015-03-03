@@ -36,6 +36,7 @@
 #include <QString>
 #include <QProcess>
 #include <cassert>
+#include <cstdint>
 #include <vector>
 #include "player.hpp"
 
@@ -101,6 +102,7 @@ namespace team_planets_engine {
     void destroy_players_();
 
     QString generate_bot_input_(team_planets::player_id id);
+    uint32_t find_team_message(team_planets::player_id id);
     QString perform_bot_io_(team_planets::player_id id, const QString& bot_input);
     void process_bot_output_(team_planets::player_id id, const QString& bot_output);
 

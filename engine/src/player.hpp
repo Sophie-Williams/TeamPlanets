@@ -31,6 +31,7 @@
 #ifndef _TEAMPLANETS_TEAMPLANETSENGINE_PLAYER_HPP_
 #define _TEAMPLANETS_TEAMPLANETSENGINE_PLAYER_HPP_
 
+#include <cstdint>
 #include <qcolor.h>
 #include "basic_types.hpp"
 
@@ -55,6 +56,9 @@ namespace team_planets_engine {
     unsigned int ping() const { return ping_; }
     void set_ping(unsigned int ping) { ping_ = ping; }
 
+    uint32_t message() const { return message_; }
+    void set_message(uint32_t message) { message_ = message; }
+
   private:
     // Player properties
     team_planets::player_id id_;
@@ -67,6 +71,9 @@ namespace team_planets_engine {
     unsigned int            num_ships_;
 
     unsigned int            ping_;
+
+    // Player team message
+    uint32_t                message_;
   };
 }
 
