@@ -61,6 +61,7 @@ void BattleThread::run() {
 
     // Creating the players
     create_players_();
+    cleanup_map_();
     update_players_();
 
     // Battle main loop
@@ -149,6 +150,15 @@ void BattleThread::create_players_() {
   }
 
   players_mutex_.unlock();
+}
+
+void BattleThread::cleanup_map_() {
+  // Remove unexistant players from the map
+  map_mutex_.lock();
+  for_each(map_.planets_begin(), map_.planets_end(), [this](Planet& planet) {
+    if(planet.current_owner() > players_.size()) planet.set_current_owner(neutral_player);
+  });
+  map_mutex_.unlock();
 }
 
 void BattleThread::ask_players_() {

@@ -84,6 +84,7 @@ namespace team_planets_engine {
     Q_DISABLE_COPY(BattleThread)
 
     void create_players_();
+    void cleanup_map_();
     void ask_players_();
     void update_players_();
     void destroy_players_();
