@@ -44,7 +44,8 @@ BattleThread::BattleThread(const QString& map_file_name,
                            QMutex& map_mutex, team_planets::Map& map, QObject* parent):
   QThread(parent), stop_(false), map_file_name_(map_file_name), team1_bot_file_name_(team1_bot_file_name),
   team1_num_players_(team1_num_players), team2_bot_file_name_(team2_bot_file_name),
-  team2_num_players_(team2_num_players), map_mutex_(map_mutex), map_(map) {
+  team2_num_players_(team2_num_players), map_mutex_(map_mutex), map_(map),
+  battle_in_progress_(true), current_turn_(1), winner_(0) {
 }
 
 void BattleThread::run() {
@@ -66,8 +67,9 @@ void BattleThread::run() {
 
     // Battle main loop
     bool stop_requested = false;
-    bool battle_is_over = false;
-    while(!stop_requested && !battle_is_over) {
+    while(!stop_requested && battle_in_progress_ && current_turn_ <= 200) {
+      qDebug() << "Turn " << current_turn_ << " begins...";
+
       // Manually process pending events
       QCoreApplication::sendPostedEvents();
       QCoreApplication::processEvents();
@@ -83,16 +85,26 @@ void BattleThread::run() {
       // Updating players and eliminating dead ones
       update_players_();
       eliminate_dead_players_();
-      battle_is_over = check_victory_();
+      battle_in_progress_ = !check_victory_();
 
       // Update UI
       emit map_updated();
-      sleep(1);
+      msleep(500);
 
       // Check if the thread must stop
       stop_mutex_.lock();
       stop_requested = stop_;
       stop_mutex_.unlock();
+
+      ++current_turn_;
+    }
+    --current_turn_;
+
+    // Check the battle termination condition
+    if(battle_in_progress_) {
+      battle_in_progress_ = false;
+      check_victory_max_turns_exceeded_();
+      emit map_updated();
     }
 
     // Clean up
@@ -103,7 +115,9 @@ void BattleThread::run() {
     qDebug() << "The battle was aborted due to an error!";
   }
 
-  qDebug() << "The battle is over.";
+  if(winner_ == 1) qDebug() << "The battle is over in" << current_turn_ << "turns. Team 1 wins!";
+  else if(winner_ == 2) qDebug() << "The battle is over in" << current_turn_ << "turns. Team 2 wins!";
+  else qDebug() << "The battle is over in" << current_turn_ << "turns. No winner!";
 }
 
 void BattleThread::bot_error(QProcess::ProcessError error) {
@@ -256,7 +270,41 @@ bool BattleThread::check_victory_() {
   }
   players_mutex_.unlock();
 
-  return !team1_alive_players || !team2_alive_players;
+  if(team1_alive_players == 0 && team2_alive_players == 0) {
+    // Battle is over, no winner
+    winner_ = 0;
+    return true;
+  }
+
+  if(team1_alive_players == 0) {
+    // Battle is over, team 2 wins
+    winner_ = 2;
+    return true;
+  }
+
+  if(team2_alive_players == 0) {
+    // Battle is over, team 1 wins
+    winner_ = 1;
+    return true;
+  }
+
+  return false;
+}
+
+void BattleThread::check_victory_max_turns_exceeded_() {
+  unsigned int team1_fleet = 0;
+  unsigned int team2_fleet = 0;
+
+  players_mutex_.lock();
+  for(const Player& player:players_) {
+    if(player.team() == 1) team1_fleet += player.num_ships();
+    else team2_fleet += player.num_ships();
+  }
+  players_mutex_.unlock();
+
+  if(team1_fleet > team2_fleet) winner_ = 1;
+  else if(team2_fleet > team1_fleet) winner_ = 2;
+  else winner_ = 0;
 }
 
 void BattleThread::destroy_players_() {

@@ -73,6 +73,24 @@ void MainWindow::quitActionTriggered_() {
 void MainWindow::battle_thread_map_updated_() {
   update_teams_tables_();
   ui_.battleMap->update();
+
+  if(battle_thread_->battle_in_progress())
+    statusBar()->showMessage(tr("Turn: %1").arg(battle_thread_->current_turn()));
+  else {
+    switch(battle_thread_->winner()) {
+    case 1:
+      statusBar()->showMessage(tr("Battle is over in %1 turns. Team 1 wins!").arg(battle_thread_->current_turn()));
+      break;
+
+    case 2:
+      statusBar()->showMessage(tr("Battle is over in %1 turns. Team 2 wins!").arg(battle_thread_->current_turn()));
+      break;
+
+    default:
+      statusBar()->showMessage(tr("Battle is over in %1 turns. No winner!").arg(battle_thread_->current_turn()));
+    }
+
+  }
 }
 
 void MainWindow::battle_thread_error_occured(const QString& msg) {

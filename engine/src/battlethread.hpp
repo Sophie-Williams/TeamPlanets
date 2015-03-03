@@ -70,6 +70,11 @@ namespace team_planets_engine {
     player_const_iterator players_begin() const { return players_.begin(); }
     player_const_iterator players_end() const { return players_.end(); }
 
+    // Misc statistics
+    bool battle_in_progress() const { return battle_in_progress_; }
+    unsigned int current_turn() const { return current_turn_; }
+    unsigned int winner() const { return winner_; }
+
   signals:
     void map_updated();
     void error_occured(const QString& msg);
@@ -89,6 +94,7 @@ namespace team_planets_engine {
     void update_players_();
     void eliminate_dead_players_();
     bool check_victory_();
+    void check_victory_max_turns_exceeded_();
     void destroy_players_();
 
     QString generate_bot_input_(team_planets::player_id id);
@@ -113,9 +119,14 @@ namespace team_planets_engine {
     team_planets::Map&  map_;
 
     // Players and the associated bots
-    QMutex        players_mutex_;
+    QMutex                  players_mutex_;
     players_list            players_;
     std::vector<QProcess*>  bots_;
+
+    // Misc statistics
+    bool          battle_in_progress_;
+    unsigned int  current_turn_;
+    unsigned int  winner_;
   };
 }
 
