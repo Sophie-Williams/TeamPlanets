@@ -1,5 +1,5 @@
 // main.cpp - Application entry point
-// bully - A TeamPlanets bots implementing a very simple aggressive strategy (with team support)
+// rage_team - A TeamPlanets bots implementing a very aggressive strategy (with team support)
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 // All rights reserved.
@@ -29,7 +29,6 @@
 // SUCH DAMAGE.
 
 #include <cstdlib>
-#include <vector>
 #include <algorithm>
 #include "map.hpp"
 
@@ -42,7 +41,7 @@ bool is_owned_by_a_team(const vector<player_id>& team, const Planet& planet) {
 }
 
 int main(int argc, char* argv[]) {
-  Map               map;
+  Map map;
   vector<player_id> my_team;
   size_t            teammate_id_to_send = 0;
 
@@ -55,35 +54,32 @@ int main(int argc, char* argv[]) {
     if(map.message() != 0 && map.message() != (uint32_t)map.myself())
       my_team.push_back((player_id)map.message());
 
-    // If we have a fleet in flight, do nothing
-    if(map.num_fleets() == 0) {
-      // Search one of my planets having the more ships on it
-      planet_id source_planet = 0;
-      for_each(map.planets_begin(), map.planets_end(), [&map, &source_planet](const Planet& planet) {
-        if(planet.current_owner() == map.myself()) {
-          if(source_planet == 0) source_planet = planet.id();
-          else {
-            if(map.planet(source_planet).current_num_ships() < planet.current_num_ships())
-              source_planet = planet.id();
-          }
-        }
-      });
+    for_each(map.planets_begin(), map.planets_end(), [&map, &my_team](const Planet& planet) {
+      if(planet.current_owner() == map.myself()) {
+        // For each of my planets
+        if(planet.current_num_ships() > 10*planet.ship_increase()) {
+          // The planet have enough ships to perform an attack
 
-      // Search one of enemy or neutral planets having the less ships on it
-      planet_id destination_planet = 0;
-      for_each(map.planets_begin(), map.planets_end(), [&map, &my_team, &destination_planet](const Planet& planet) {
-        if(planet.current_owner() == neutral_player || !is_owned_by_a_team(my_team, planet)) {
-          if(destination_planet == 0) destination_planet = planet.id();
-          else {
-            if(map.planet(destination_planet).current_num_ships() > planet.current_num_ships())
-              destination_planet = planet.id();
-          }
-        }
-      });
+          // Finding the best planet to attack
+          planet_id best_destination = 0;
+          for_each(map.planets_begin(), map.planets_end(),
+                   [&map, &my_team, &planet, &best_destination](const Planet& dest_planet) {
+            if(dest_planet.current_owner() == neutral_player
+                || !is_owned_by_a_team(my_team, dest_planet)) {
+              if(best_destination == 0) best_destination = dest_planet.id();
+              else if(planet.compute_travel_distance(dest_planet)
+                  < planet.compute_travel_distance(map.planet(best_destination))) {
+                best_destination = dest_planet.id();
+              }
+            }
+          });
 
-      // Sending the fleet (half the number of ships on the source planet)
-      map.bot_launch_fleet(source_planet, destination_planet, map.planet(source_planet).current_num_ships()/2);
-    }
+          // If the planet was found, attack!
+          if(best_destination)
+            map.bot_launch_fleet(planet.id(), best_destination, planet.current_num_ships());
+        }
+      }
+    });
 
     // Generating the message to the team
     if(teammate_id_to_send < my_team.size()) {
