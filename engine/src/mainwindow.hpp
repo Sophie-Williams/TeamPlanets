@@ -52,6 +52,7 @@ namespace team_planets_engine {
   private slots:
     void startBattleActionTriggered_();
     void quitActionTriggered_();
+    void aboutActionTriggered_();
 
     void battle_thread_map_updated_();
     void battle_thread_error_occured(const QString& msg);
