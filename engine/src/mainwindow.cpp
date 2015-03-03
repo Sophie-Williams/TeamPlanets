@@ -59,6 +59,14 @@ void MainWindow::startBattleActionTriggered_() {
   static StartBattleDialog* dialog  = nullptr;
   if(!dialog) dialog = new StartBattleDialog(this);
 
+  if(battle_thread_) {
+    dialog->set_map_file_name(battle_thread_->map_file_name());
+    dialog->set_team1_bot_file_name(battle_thread_->team1_bot_file_name());
+    dialog->set_team1_num_players(battle_thread_->team1_num_players());
+    dialog->set_team2_bot_file_name(battle_thread_->team2_bot_file_name());
+    dialog->set_team2_num_players(battle_thread_->team2_num_players());
+  }
+
   if(dialog->exec())
     startNewBattle_(dialog->map_file_name(),
                     dialog->team1_bot_file_name(), dialog->team1_num_players(),

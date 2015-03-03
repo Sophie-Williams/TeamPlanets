@@ -58,7 +58,10 @@ namespace team_planets_engine {
     void stop() { stop_mutex_.lock(); stop_ = true; stop_mutex_.unlock(); }
 
     // Battle configuration statistics
+    const QString& map_file_name() const { return map_file_name_; }
+    const QString& team1_bot_file_name() const { return team1_bot_file_name_; }
     unsigned int team1_num_players() const { return team1_num_players_; }
+    const QString& team2_bot_file_name() const { return team2_bot_file_name_; }
     unsigned int team2_num_players() const { return team2_num_players_; }
 
     // Players list accessors

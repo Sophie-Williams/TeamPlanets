@@ -43,10 +43,15 @@ namespace team_planets_engine {
     explicit StartBattleDialog(QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
 
     QString map_file_name() const { return ui_.mapLineEdit->text(); }
+    void set_map_file_name(const QString& file_name) { ui_.mapLineEdit->setText(file_name); }
     QString team1_bot_file_name() const { return ui_.team1LineEdit->text(); }
+    void set_team1_bot_file_name(const QString& file_name) { ui_.team1LineEdit->setText(file_name); }
     unsigned int team1_num_players() const { return (unsigned int)ui_.team1SpinBox->value(); }
+    void set_team1_num_players(unsigned int num_players) { ui_.team1SpinBox->setValue((int)num_players); }
     QString team2_bot_file_name() const { return ui_.team2LineEdit->text(); }
+    void set_team2_bot_file_name(const QString& file_name) { ui_.team2LineEdit->setText(file_name); }
     unsigned int team2_num_players() const { return (unsigned int)ui_.team2SpinBox->value(); }
+    void set_team2_num_players(unsigned int num_players) { ui_.team2SpinBox->setValue((int)num_players); }
 
   private slots:
     void mapButtonClicked_();
