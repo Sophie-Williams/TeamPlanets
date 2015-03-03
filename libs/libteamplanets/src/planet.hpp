@@ -61,7 +61,7 @@ namespace team_planets {
     // Various game mechanics functions
     void produce_new_ships() { current_num_ships_ += ship_increase_; }
     
-    unsigned int compute_travel_distance(const Planet& other_planet) {
+    unsigned int compute_travel_distance(const Planet& other_planet) const {
       return (unsigned int)std::trunc(location_.euclidian_distance(other_planet.location_));
     }
     void remove_ships(unsigned int num_ships) {
