@@ -1,5 +1,5 @@
 // main.cpp - Application entry point
-// bully - A TeamPlanets bots implementing a very simple aggressive strategy
+// dual - A TeamPlanets bots implementing a slightly more elaborated aggressive strategy
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
 // All rights reserved.
@@ -42,8 +42,37 @@ int main(int argc, char* argv[]) {
   while(true) {
     map.bot_begin_turn();
 
-    // If we have a fleet in flight, do nothing
-    if(map.num_fleets() == 0) {
+    // Determining the current strategy
+    bool          attack_the_enemy          = false;
+    unsigned int  max_simultaneous_attacks  = 1;
+
+    // Counting mine and enemy resources
+    unsigned int my_ships = 0, my_production = 0;
+    unsigned int enemy_ships = 0, enemy_production = 0;
+    for_each(map.planets_begin(), map.planets_end(),
+             [&map, &my_ships, &my_production, &enemy_ships, &enemy_production](const Planet& planet) {
+      if(planet.current_owner() == map.myself()) {
+        my_ships += planet.current_num_ships();
+        my_production += planet.ship_increase();
+      } else if(planet.current_owner() != neutral_player) {
+        enemy_ships += planet.current_num_ships();
+        enemy_production += planet.ship_increase();
+      }
+    });
+
+    if(my_ships > enemy_ships) {
+      if(my_production > enemy_production) {
+        // I am in overwhelming advantage, conservatively sibling the enemy
+        max_simultaneous_attacks = 1;
+        attack_the_enemy = true;
+      } else max_simultaneous_attacks = 3; // Expanding agressively
+    } else {
+      if(my_production > enemy_production) max_simultaneous_attacks = 1;
+      else max_simultaneous_attacks = 5;
+    }
+
+    // If we have too much fleets in flight, do nothing
+    if(map.num_fleets() <= max_simultaneous_attacks) {
       // Search one of my planets having the more ships on it
       planet_id source_planet = 0;
       for_each(map.planets_begin(), map.planets_end(), [&map, &source_planet](const Planet& planet) {
@@ -58,18 +87,22 @@ int main(int argc, char* argv[]) {
 
       // Search one of enemy or neutral planets having the less ships on it
       planet_id destination_planet = 0;
-      for_each(map.planets_begin(), map.planets_end(), [&map, &destination_planet](const Planet& planet) {
+      for_each(map.planets_begin(), map.planets_end(),
+               [attack_the_enemy, &map, &destination_planet](const Planet& planet) {
         if(planet.current_owner() != map.myself()) {
-          if(destination_planet == 0) destination_planet = planet.id();
-          else {
-            if(map.planet(destination_planet).current_num_ships() > planet.current_num_ships())
-              destination_planet = planet.id();
+          if(!attack_the_enemy || planet.current_owner() != neutral_player) {
+            if(destination_planet == 0) destination_planet = planet.id();
+            else {
+              if(map.planet(destination_planet).current_num_ships() > planet.current_num_ships())
+                destination_planet = planet.id();
+            }
           }
         }
       });
 
       // Sending the fleet (half the number of ships on the source planet)
-      map.bot_launch_fleet(source_planet, destination_planet, map.planet(source_planet).current_num_ships()/2);
+      if(map.planet(source_planet).current_num_ships() > 1)
+        map.bot_launch_fleet(source_planet, destination_planet, map.planet(source_planet).current_num_ships()/2);
     }
 
     map.bot_end_turn();

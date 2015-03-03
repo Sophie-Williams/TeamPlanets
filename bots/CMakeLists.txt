@@ -34,8 +34,9 @@ project(teamplanets_bots)
 include_directories(${PROJECT_SOURCE_DIR}/../libs/libteamplanets/src)
 
 # Creating a target per bot directory
-execute_process(COMMAND find ${PROJECT_SOURCE_DIR} -mindepth 1 -type d -print
+execute_process(COMMAND find ${PROJECT_SOURCE_DIR} -mindepth 1 -type d -printf "%p;"
                 OUTPUT_VARIABLE bots_dirs)
+                
 foreach(bot_dir_orig ${bots_dirs})
   string(STRIP ${bot_dir_orig} bot_dir)
   get_filename_component(bot_name ${bot_dir} NAME_WE)
