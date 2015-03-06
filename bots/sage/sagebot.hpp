@@ -31,20 +31,55 @@
 #ifndef _TEAMPLANETS_SAGE_SAGE_HPP_
 #define _TEAMPLANETS_SAGE_SAGE_HPP_
 
+#include <vector>
 #include "bot.hpp"
 #include "utils.hpp"
 
 namespace sage {
   class SageBot: public Bot {
+  private:
+    typedef std::vector<team_planets::planet_id>  neighbors_list;
+    typedef std::vector<neighbors_list>           neighborhoods_list;
+
   public:
     DISABLE_COPY(SageBot)
 
-    SageBot() {}
+    SageBot(): neighborhood_radius_multiplier_(4), num_ships_per_reinforcement_(10),
+      planets_mean_distance_(0), neighborhood_radius_(0) {}
     virtual ~SageBot() {}
 
   protected:
     virtual void init_();
     virtual void perform_turn_();
+
+    neighbors_list& neighbors_(team_planets::planet_id planet) { return neighborhoods_[planet - 1]; }
+    const neighbors_list& neighbors_(team_planets::planet_id planet) const { return neighborhoods_[planet - 1]; }
+
+    bool is_frontline_(team_planets::planet_id id) const;
+    unsigned int num_ships_to_take_a_planet_(team_planets::planet_id src, team_planets::planet_id dst) const;
+    float compute_target_planet_score_(team_planets::planet_id src, team_planets::planet_id dst) const;
+
+    void process_frontline_planet_(team_planets::planet_id id);
+    void process_backline_planet_(team_planets::planet_id id);
+
+  private:
+    unsigned int compute_planets_mean_distance_() const;
+    void compute_planets_neighborhoods_();
+
+    // User defined bot parameters
+    const unsigned int  neighborhood_radius_multiplier_;
+    const unsigned int  num_ships_per_reinforcement_;
+
+    // Precomputed map parameters
+    unsigned int  planets_mean_distance_;
+    unsigned int  neighborhood_radius_;
+
+    // Precomputed planets neighborhoods
+    neighborhoods_list                            neighborhoods_;
+
+    // Per turn data structures
+    std::vector<team_planets::planet_id>  frontline_planets_;
+    std::vector<team_planets::planet_id>  backline_planets_;
   };
 }
 

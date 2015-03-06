@@ -93,6 +93,7 @@ namespace team_planets {
     void bot_end_turn();
 
     void bot_launch_fleet(planet_id source, planet_id destination, unsigned int num_ships);
+    bool bot_planet_is_targeted_by_a_fleet(planet_id id) const;
 
     // Game mechanics for engine
     void engine_perform_turn();

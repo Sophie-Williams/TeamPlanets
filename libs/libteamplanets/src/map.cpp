@@ -103,6 +103,13 @@ void Map::bot_launch_fleet(planet_id source, planet_id destination, unsigned int
                             planet(destination).compute_travel_distance(planet(source))));
 }
 
+bool Map::bot_planet_is_targeted_by_a_fleet(planet_id id) const {
+  auto it = find_if(fleets_.begin(), fleets_.end(), [id](const Fleet& fleet) {
+    return fleet.destination() == id;
+  });
+  return it != end(fleets_);
+}
+
 // Game mechanics for engine
 void Map::engine_perform_turn() {
   update_fleets_();
