@@ -43,6 +43,7 @@ namespace sage {
     virtual ~SageBot() {}
 
   protected:
+    virtual void init_();
     virtual void perform_turn_();
   };
 }

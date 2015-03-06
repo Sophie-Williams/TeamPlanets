@@ -40,7 +40,7 @@ namespace sage {
   public:
     DISABLE_COPY(Bot)
 
-    Bot(): teammate_id_to_send_(0) {}
+    Bot(): initialized_(false), teammate_id_to_send_(0) {}
     virtual ~Bot() {}
 
     int run();
@@ -51,11 +51,16 @@ namespace sage {
 
     bool is_owned_by_my_team_(const team_planets::Planet& planet) const;
 
+    virtual void init_();
     virtual void perform_turn_();
 
   private:
     void begin_turn_();
     void end_turn_();
+
+    void initialize_bot_();
+
+    bool                                  initialized_;
 
     team_planets::Map                     map_;
     std::vector<team_planets::player_id>  my_team_;

@@ -30,6 +30,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include "log.hpp"
 #include "bot.hpp"
 
 using namespace std;
@@ -51,11 +52,17 @@ bool Bot::is_owned_by_my_team_(const Planet& planet) const {
   return it != end(my_team_);
 }
 
+void Bot::init_() {
+}
+
 void Bot::perform_turn_() {
 }
 
 void Bot::begin_turn_() {
   map_.bot_begin_turn();
+
+  // Perform initialization
+  if(!initialized_) initialize_bot_();
 
   // Update the list of team mates
   if(my_team_.empty()) my_team_.push_back(map_.myself());
@@ -71,4 +78,10 @@ void Bot::end_turn_() {
   } else map_.set_message(0);
 
   map_.bot_end_turn();
+}
+
+void Bot::initialize_bot_() {
+  Log::Instance().init_log(map_.myself());
+  init_();
+  initialized_ = true;
 }

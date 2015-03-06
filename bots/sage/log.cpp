@@ -1,4 +1,4 @@
-// sagebot.cpp - SageBot class implementation
+// log.cpp - Log singleton class implementation
 // sage - A TeamPlanets bot written for MachineZone job application
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,43 +28,45 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <algorithm>
+#include <fstream>
+#include <sstream>
 #include "log.hpp"
-#include "sagebot.hpp"
 
 using namespace std;
 using namespace team_planets;
 using namespace sage;
 
-void SageBot::init_() {
-  LOG << "SageBot Version 1.0 was started for player " << map().myself() << endl;
+Log::~Log() {
+  delete log_;
 }
 
-void SageBot::perform_turn_() {
-  for_each(map().planets_begin(), map().planets_end(), [this](const Planet& planet) {
-    if(planet.current_owner() == map().myself()) {
-      // For each of my planets
-      if(planet.current_num_ships() > 10*planet.ship_increase()) {
-        // The planet have enough ships to perform an attack
+Log& Log::Instance() {
+  static Log* log = nullptr;
+  if(!log) log = new Log();
 
-        // Finding the best planet to attack
-        planet_id best_destination = 0;
-        for_each(map().planets_begin(), map().planets_end(),
-                 [this, &planet, &best_destination](const Planet& dest_planet) {
-          if(dest_planet.current_owner() == neutral_player
-              || !is_owned_by_my_team_(dest_planet)) {
-            if(best_destination == 0) best_destination = dest_planet.id();
-            else if(planet.compute_travel_distance(dest_planet)
-                < planet.compute_travel_distance(map().planet(best_destination))) {
-              best_destination = dest_planet.id();
-            }
-          }
-        });
+  return *log;
+}
 
-        // If the planet was found, attack!
-        if(best_destination)
-          map().bot_launch_fleet(planet.id(), best_destination, planet.current_num_ships());
-      }
-    }
-  });
+void Log::init_log(player_id id) {
+#ifndef NO_LOG
+  ostringstream log_file_name;
+  log_file_name << "sage_" << id << ".txt";
+
+  delete log_;
+  log_ = new ofstream(log_file_name.str());
+  write_to_file_ = true;
+#endif
+}
+
+ostream& Log::out() {
+  if(write_to_file_) log_->flush();
+  else {
+    static_cast<ostringstream*>(log_)->str("");
+  }
+
+  return *(log_);
+}
+
+Log::Log(): write_to_file_(false), log_(nullptr) {
+  log_ = new ostringstream;
 }

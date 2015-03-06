@@ -1,4 +1,4 @@
-// sagebot.cpp - SageBot class implementation
+// log.hpp - Log singleton class definition
 // sage - A TeamPlanets bot written for MachineZone job application
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,43 +28,31 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <algorithm>
-#include "log.hpp"
-#include "sagebot.hpp"
+#ifndef _TEAMPLANETS_SAGE_LOG_HPP_
+#define _TEAMPLANETS_SAGE_LOG_HPP_
 
-using namespace std;
-using namespace team_planets;
-using namespace sage;
+#include <ostream>
+#include "basic_types.hpp"
+#include "utils.hpp"
 
-void SageBot::init_() {
-  LOG << "SageBot Version 1.0 was started for player " << map().myself() << endl;
+#define LOG Log::Instance().out()
+
+namespace sage {
+  class Log {
+  public:
+    ~Log();
+    static Log& Instance();
+
+    void init_log(team_planets::player_id);
+    std::ostream& out();
+
+  private:
+    Log();
+    DISABLE_COPY(Log)
+
+    bool          write_to_file_;
+    std::ostream* log_;
+  };
 }
 
-void SageBot::perform_turn_() {
-  for_each(map().planets_begin(), map().planets_end(), [this](const Planet& planet) {
-    if(planet.current_owner() == map().myself()) {
-      // For each of my planets
-      if(planet.current_num_ships() > 10*planet.ship_increase()) {
-        // The planet have enough ships to perform an attack
-
-        // Finding the best planet to attack
-        planet_id best_destination = 0;
-        for_each(map().planets_begin(), map().planets_end(),
-                 [this, &planet, &best_destination](const Planet& dest_planet) {
-          if(dest_planet.current_owner() == neutral_player
-              || !is_owned_by_my_team_(dest_planet)) {
-            if(best_destination == 0) best_destination = dest_planet.id();
-            else if(planet.compute_travel_distance(dest_planet)
-                < planet.compute_travel_distance(map().planet(best_destination))) {
-              best_destination = dest_planet.id();
-            }
-          }
-        });
-
-        // If the planet was found, attack!
-        if(best_destination)
-          map().bot_launch_fleet(planet.id(), best_destination, planet.current_num_ships());
-      }
-    }
-  });
-}
+#endif
