@@ -342,7 +342,8 @@ uint32_t BattleThread::find_team_message(player_id id) {
   do {
     --cur_id;
     if(cur_id == 0) cur_id = players_.size();
-    if(players_[cur_id - 1].team() == players_[id - 1].team()) ally_found = true;
+    if(players_[cur_id - 1].team() == players_[id - 1].team()
+        && players_[cur_id - 1].status() == Player::Alive) ally_found = true;
   } while(!ally_found && cur_id != id);
 
   if(ally_found) return players_[cur_id - 1].message();
