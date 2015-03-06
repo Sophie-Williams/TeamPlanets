@@ -47,11 +47,6 @@ int Bot::run() {
   return EXIT_FAILURE;
 }
 
-bool Bot::is_owned_by_my_team_(const Planet& planet) const {
-  auto it = find(my_team_.begin(), my_team_.end(), planet.current_owner());
-  return it != end(my_team_);
-}
-
 void Bot::init_() {
 }
 
@@ -64,21 +59,14 @@ void Bot::begin_turn_() {
   // Perform initialization
   if(!initialized_) initialize_bot_();
 
-  LOG << "Begin turn " << current_turn_ << "..." << endl;
-
   // Update the list of team mates
-  if(my_team_.empty()) my_team_.push_back(map_.myself());
-  if(map_.message() != 0 && map_.message() != (uint32_t)map_.myself())
-    my_team_.push_back((player_id)map_.message());
+  if(!team_.is_complete()) map_.set_message(team_.process_message(map_.myself(), map_.message()));
+
+  LOG << "Begin turn " << current_turn_ << "..." << endl;
+  LOG << "team = " << team_ << endl;
 }
 
 void Bot::end_turn_() {
-  // Generating the message to the team
-  if(teammate_id_to_send_ < my_team_.size()) {
-    map_.set_message((uint32_t)my_team_[teammate_id_to_send_]);
-    ++teammate_id_to_send_;
-  } else map_.set_message(0);
-
   map_.bot_end_turn();
   ++current_turn_;
   LOG << endl;

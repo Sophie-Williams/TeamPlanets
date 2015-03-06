@@ -1,4 +1,4 @@
-// sagebot.cpp - SageBot class implementation
+// team.hpp - Team class definition
 // sage - A TeamPlanets bot written for MachineZone job application
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,42 +28,47 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <algorithm>
-#include "log.hpp"
-#include "sagebot.hpp"
+#ifndef _TEAMPLANETS_SAGE_TEAM_HPP_
+#define _TEAMPLANETS_SAGE_TEAM_HPP_
 
-using namespace std;
-using namespace team_planets;
-using namespace sage;
+#include <cstdint>
+#include <vector>
+#include <ostream>
+#include "basic_types.hpp"
 
-void SageBot::init_() {
-  LOG << "SageBot Version 1.0 was started for player " << map().myself() << endl;
+namespace team_planets { class Planet; }
+
+namespace sage {
+  class Team {
+  public:
+    Team();
+
+    // Planet ownership tests
+    bool is_owned_by_my_team(const team_planets::Planet& planet) const;
+    bool is_owned_by_enemy_team(const team_planets::Planet& planet) const;
+
+    // Team management
+    bool is_complete() const { return team_is_complete_; }
+    uint32_t process_message(team_planets::player_id myself, uint32_t msg);
+
+  private:
+    template<typename charT, typename traits>
+    friend std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Team& team);
+
+    std::vector<team_planets::player_id>  team_;
+    std::size_t                           teammate_id_to_send_;
+    bool                                  team_is_complete_;
+  };
+
+  template<typename charT, typename traits>
+  std::basic_ostream<charT,traits>& operator<<(std::basic_ostream<charT,traits>& out, const Team& team) {
+    for(team_planets::player_id id:team.team_) out << id << " ";
+    out << ", complete = ";
+    if(team.team_is_complete_) out << "true";
+    else out << "false";
+
+    return out;
+  }
 }
 
-void SageBot::perform_turn_() {
-  for_each(map().planets_begin(), map().planets_end(), [this](const Planet& planet) {
-    if(is_owned_by_me_(planet)) {
-      // For each of my planets
-      if(planet.current_num_ships() > 10*planet.ship_increase()) {
-        // The planet have enough ships to perform an attack
-
-        // Finding the best planet to attack
-        planet_id best_destination = 0;
-        for_each(map().planets_begin(), map().planets_end(),
-                 [this, &planet, &best_destination](const Planet& dest_planet) {
-          if(is_neutral_(dest_planet) || is_owned_by_enemy_team_(dest_planet)) {
-            if(best_destination == 0) best_destination = dest_planet.id();
-            else if(planet.compute_travel_distance(dest_planet)
-                < planet.compute_travel_distance(map().planet(best_destination))) {
-              best_destination = dest_planet.id();
-            }
-          }
-        });
-
-        // If the planet was found, attack!
-        if(best_destination)
-          map().bot_launch_fleet(planet.id(), best_destination, planet.current_num_ships());
-      }
-    }
-  });
-}
+#endif

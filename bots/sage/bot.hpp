@@ -33,6 +33,7 @@
 
 #include <vector>
 #include "map.hpp"
+#include "team.hpp"
 #include "utils.hpp"
 
 namespace sage {
@@ -40,19 +41,29 @@ namespace sage {
   public:
     DISABLE_COPY(Bot)
 
-    Bot(): initialized_(false), current_turn_(1), teammate_id_to_send_(0) {}
+    Bot(): initialized_(false), current_turn_(1) {}
     virtual ~Bot() {}
 
     int run();
 
   protected:
+    // Various general info
     unsigned int current_turn() const { return current_turn_; }
 
+    // Access to the map
     team_planets::Map& map() { return map_; }
     const team_planets::Map& map() const { return map_; }
 
-    bool is_owned_by_my_team_(const team_planets::Planet& planet) const;
+    // Planet ownership checks
+    bool team_is_complete_() const { return team_.is_complete(); }
+    bool is_owned_by_me_(const team_planets::Planet& planet) const { return planet.current_owner() == map_.myself(); }
+    bool is_neutral_(const team_planets::Planet& planet) const { return planet.current_owner() == neutral_player; }
+    bool is_owned_by_my_team_(const team_planets::Planet& planet) const { return team_.is_owned_by_my_team(planet); }
+    bool is_owned_by_enemy_team_(const team_planets::Planet& planet) const {
+      return team_.is_owned_by_enemy_team(planet);
+    }
 
+    // Function to overload
     virtual void init_();
     virtual void perform_turn_();
 
@@ -66,8 +77,7 @@ namespace sage {
     unsigned int                          current_turn_;
 
     team_planets::Map                     map_;
-    std::vector<team_planets::player_id>  my_team_;
-    size_t                                teammate_id_to_send_;
+    Team                                  team_;
   };
 }
 

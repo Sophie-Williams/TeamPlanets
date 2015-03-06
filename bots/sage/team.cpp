@@ -1,4 +1,4 @@
-// sagebot.cpp - SageBot class implementation
+// team.cpp - Team class implementation
 // sage - A TeamPlanets bot written for MachineZone job application
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -29,41 +29,42 @@
 // SUCH DAMAGE.
 
 #include <algorithm>
-#include "log.hpp"
-#include "sagebot.hpp"
+#include "planet.hpp"
+#include "team.hpp"
 
 using namespace std;
 using namespace team_planets;
 using namespace sage;
 
-void SageBot::init_() {
-  LOG << "SageBot Version 1.0 was started for player " << map().myself() << endl;
+Team::Team():
+  teammate_id_to_send_(0), team_is_complete_(false) {
 }
 
-void SageBot::perform_turn_() {
-  for_each(map().planets_begin(), map().planets_end(), [this](const Planet& planet) {
-    if(is_owned_by_me_(planet)) {
-      // For each of my planets
-      if(planet.current_num_ships() > 10*planet.ship_increase()) {
-        // The planet have enough ships to perform an attack
+// Planet ownership tests
+bool Team::is_owned_by_my_team(const Planet& planet) const {
+  auto it = find(team_.begin(), team_.end(), planet.current_owner());
+  return it != end(team_);
+}
 
-        // Finding the best planet to attack
-        planet_id best_destination = 0;
-        for_each(map().planets_begin(), map().planets_end(),
-                 [this, &planet, &best_destination](const Planet& dest_planet) {
-          if(is_neutral_(dest_planet) || is_owned_by_enemy_team_(dest_planet)) {
-            if(best_destination == 0) best_destination = dest_planet.id();
-            else if(planet.compute_travel_distance(dest_planet)
-                < planet.compute_travel_distance(map().planet(best_destination))) {
-              best_destination = dest_planet.id();
-            }
-          }
-        });
+bool Team::is_owned_by_enemy_team(const Planet& planet) const {
+  return planet.current_owner() != neutral_player && !is_owned_by_my_team(planet);
+}
 
-        // If the planet was found, attack!
-        if(best_destination)
-          map().bot_launch_fleet(planet.id(), best_destination, planet.current_num_ships());
-      }
-    }
-  });
+uint32_t Team::process_message(player_id myself, uint32_t msg) {
+  if(team_.empty()) team_.push_back(myself);
+
+  // Processing input message
+  if(msg != 0) {
+    if(msg != (uint32_t)myself) team_.push_back((player_id)msg);
+    else team_is_complete_ = true;
+  }
+
+  // Generating output message
+  uint32_t ret = 0;
+  if(teammate_id_to_send_ < team_.size()) {
+    ret = (uint32_t)team_[teammate_id_to_send_];
+    ++teammate_id_to_send_;
+  }
+
+  return ret;
 }
