@@ -396,6 +396,7 @@ void BattleThread::process_bot_output_(player_id id, const QString& bot_output) 
       try {
         map_.engine_launch_fleet(id, fleet.source(), fleet.destination(), fleet.num_ships());
       } catch(const exception& e) {
+        qDebug() << "BOT ERROR: " << e.what() << endl;
         kill_misbehaving_bot_(id);
       }
       map_mutex_.unlock();

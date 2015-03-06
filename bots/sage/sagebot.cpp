@@ -152,7 +152,8 @@ void SageBot::process_frontline_planet_(planet_id id) {
     if(best_target_planet != 0) {
       const unsigned int num_ships_to_send = num_ships_to_take_a_planet_(id, best_target_planet);
 
-      if(map().planet(id).current_num_ships() - num_ships_to_send > safe_number_of_ships) {
+      if(num_ships_to_send <= map().planet(id).current_num_ships() &&
+         map().planet(id).current_num_ships() - num_ships_to_send > safe_number_of_ships) {
         map().bot_launch_fleet(id, best_target_planet, num_ships_to_send);
         LOG << "targeting " << best_target_planet << " with " << num_ships_to_send << " ships." << endl;
       } else LOG << "targeting " << best_target_planet << " would put this planet in danger, no further action."
