@@ -64,6 +64,8 @@ void Bot::begin_turn_() {
   // Perform initialization
   if(!initialized_) initialize_bot_();
 
+  LOG << "Begin turn " << current_turn_ << "..." << endl;
+
   // Update the list of team mates
   if(my_team_.empty()) my_team_.push_back(map_.myself());
   if(map_.message() != 0 && map_.message() != (uint32_t)map_.myself())
@@ -78,6 +80,8 @@ void Bot::end_turn_() {
   } else map_.set_message(0);
 
   map_.bot_end_turn();
+  ++current_turn_;
+  LOG << endl;
 }
 
 void Bot::initialize_bot_() {

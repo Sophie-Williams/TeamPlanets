@@ -40,12 +40,14 @@ namespace sage {
   public:
     DISABLE_COPY(Bot)
 
-    Bot(): initialized_(false), teammate_id_to_send_(0) {}
+    Bot(): initialized_(false), current_turn_(1), teammate_id_to_send_(0) {}
     virtual ~Bot() {}
 
     int run();
 
   protected:
+    unsigned int current_turn() const { return current_turn_; }
+
     team_planets::Map& map() { return map_; }
     const team_planets::Map& map() const { return map_; }
 
@@ -61,6 +63,7 @@ namespace sage {
     void initialize_bot_();
 
     bool                                  initialized_;
+    unsigned int                          current_turn_;
 
     team_planets::Map                     map_;
     std::vector<team_planets::player_id>  my_team_;
