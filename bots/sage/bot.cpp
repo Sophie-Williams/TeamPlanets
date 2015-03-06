@@ -56,6 +56,9 @@ void Bot::perform_turn_() {
 void Bot::begin_turn_() {
   map_.bot_begin_turn();
 
+  // Saving the starting time
+  starting_time_ = chrono::high_resolution_clock::now();
+
   // Perform initialization
   if(!initialized_) initialize_bot_();
 
@@ -69,6 +72,12 @@ void Bot::begin_turn_() {
 void Bot::end_turn_() {
   map_.bot_end_turn();
   ++current_turn_;
+
+  // Computing the overall processing time
+  chrono::time_point<chrono::high_resolution_clock> end_time = chrono::high_resolution_clock::now();
+  const chrono::milliseconds processing_time = chrono::duration_cast<chrono::milliseconds>(end_time - starting_time_);
+
+  LOG << "Output generated in " << processing_time.count() << " ms." << endl;
   LOG << endl;
 }
 

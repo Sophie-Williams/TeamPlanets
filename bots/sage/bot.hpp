@@ -32,6 +32,7 @@
 #define _TEAMPLANETS_SAGE_BOT_HPP_
 
 #include <vector>
+#include <chrono>
 #include "map.hpp"
 #include "team.hpp"
 #include "utils.hpp"
@@ -73,8 +74,9 @@ namespace sage {
 
     void initialize_bot_();
 
-    bool                                  initialized_;
-    unsigned int                          current_turn_;
+    bool                                                        initialized_;
+    unsigned int                                                current_turn_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> starting_time_;
 
     team_planets::Map                     map_;
     Team                                  team_;
