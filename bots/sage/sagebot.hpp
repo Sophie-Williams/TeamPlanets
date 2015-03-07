@@ -57,9 +57,8 @@ namespace sage {
 
     bool is_frontline_(team_planets::planet_id id) const;
     unsigned int num_ships_to_take_a_planet_(team_planets::planet_id src, team_planets::planet_id dst) const;
-    float compute_target_planet_score_(team_planets::planet_id src, team_planets::planet_id dst) const;
 
-    void process_frontline_planet_(team_planets::planet_id id);
+    void take_attack_decisions_();
     void process_backline_planet_(team_planets::planet_id id);
 
   private:

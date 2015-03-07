@@ -57,7 +57,7 @@ void SageBot::init_() {
 
     ok = true;
     for(planet_id id = 1; id <= map().num_planets(); ++id) {
-      if(neighbors_(id).empty()) ok = false;
+      if(neighbors_(id).size() < 2) ok = false;
     }
   }
 
@@ -88,7 +88,8 @@ void SageBot::perform_turn_() {
   LOG << endl << endl;
 
   // Processing frontline planets
-  for(planet_id id:frontline_planets_) process_frontline_planet_(id);
+  //for(planet_id id:frontline_planets_) process_frontline_planet_(id);
+  take_attack_decisions_();
   LOG << endl;
 
   // Processing backline planets
@@ -117,47 +118,79 @@ unsigned int SageBot::num_ships_to_take_a_planet_(planet_id src, planet_id dst) 
   return map().planet(dst).current_num_ships() + travel_dist*map().planet(dst).ship_increase() + 1;
 }
 
-// Compute a planet score to find if the planet is a useful target
-float SageBot::compute_target_planet_score_(planet_id src, planet_id dst) const {
-  const unsigned int num_ships = num_ships_to_take_a_planet_(src, dst);
-  return (float)num_ships/(float)map().planet(dst).ship_increase();
-}
+// Computes the possible attack decisions
+void SageBot::take_attack_decisions_() {
+  struct Target {
+    planet_id id;
+    float     score;
+  };
+  vector<Target> potential_targets;
 
-// Make a decision for a frontline planet
-void SageBot::process_frontline_planet_(planet_id id) {
-  LOG << "Frontline planet " << id << ": ";
+  // Computing the list of potential targets
+  for(planet_id id:frontline_planets_) {
+    for(size_t i = 0; i < neighbors_(id).size(); ++i) {
+      const Planet& dst_planet = map().planet(neighbors_(id)[i]);
 
-  // Searching for a target planet
-  planet_id best_target_planet  = 0;
-  float     best_target_score   = 0.0f;
-  for(size_t i = 0; i < neighbors_(id).size(); ++i) {
-    const Planet& dst_planet = map().planet(neighbors_(id)[i]);
+      Target tgt;
+      tgt.id = dst_planet.id();
+      tgt.score = (1.0f/(float)(dst_planet.current_num_ships() + 1))*(float)dst_planet.ship_increase();
 
-    // We only attack other players planets if we know all our allies
-    // to not accidently kill one.
-    bool is_targetable = false;
-    if(is_neutral_(dst_planet)) is_targetable = true;
-    else if(team_is_complete_() && is_owned_by_enemy_team_(dst_planet)) is_targetable = true;
+      bool is_potential_target = is_neutral_(dst_planet)
+          || (team_is_complete_() && is_owned_by_enemy_team_(dst_planet));
 
-    if(is_targetable && !map().bot_planet_is_targeted_by_a_fleet(dst_planet.id())) {
-      const float score = compute_target_planet_score_(id, dst_planet.id());
-      if(best_target_planet == 0 || best_target_score < score) {
-        best_target_planet = dst_planet.id();
-        best_target_score = score;
+      if(is_potential_target && !map().bot_planet_is_targeted_by_a_fleet(dst_planet.id())) {
+        auto it = find_if(potential_targets.begin(), potential_targets.end(), [&tgt](const Target& target) {
+          return target.id == tgt.id;
+        });
+        if(it == end(potential_targets)) potential_targets.push_back(tgt);
       }
     }
   }
 
-  if(best_target_planet != 0) {
-    const unsigned int num_ships_to_send = num_ships_to_take_a_planet_(id, best_target_planet);
+  // Sorting them by score in decending order
+  sort(potential_targets.begin(), potential_targets.end(), [](const Target& tgt1, const Target& tgt2) {
+    return tgt1.score > tgt2.score;
+  });
 
-    if(num_ships_to_send <= map().planet(id).current_num_ships() /* &&
-       map().planet(id).current_num_ships() - num_ships_to_send > safe_number_of_ships */) {
-      map().bot_launch_fleet(id, best_target_planet, num_ships_to_send);
-      LOG << "targeting " << best_target_planet << " with " << num_ships_to_send << " ships." << endl;
-    } else LOG << "targeting " << best_target_planet << " would put this planet in danger, no further action."
-               << endl;
-  } else LOG << "no potential target, no further action." << endl;
+  for_each(potential_targets.begin(), potential_targets.end(), [this](const Target& target) {
+    LOG << "Target planet " << target.id << ": owner = " << map().planet(target.id).current_owner();
+    LOG << ", score = " << target.score << endl;
+  });
+  LOG << endl;
+
+  // Trying to target each potential target
+  for(const Target tgt:potential_targets) {
+    // Finding potential sources
+    vector<planet_id> src_planets;
+    for(planet_id id:frontline_planets_) {
+      auto it = find_if(neighbors_(id).begin(), neighbors_(id).end(), [&tgt](const planet_id nid) {
+        return nid == tgt.id;
+      });
+      if(it != end(neighbors_(id))) src_planets.push_back(id);
+    }
+
+    // Finding the one having the more ships after attacking this target
+    size_t        best_source = 0;
+    int           best_remaining_ships = (int)map().planet(src_planets[best_source]).current_num_ships()
+                                         - (int)num_ships_to_take_a_planet_(src_planets[best_source], tgt.id);
+    for(size_t i = 1; i < src_planets.size(); ++i) {
+      const int remaining_ships = (int)map().planet(src_planets[i]).current_num_ships()
+                                  - (int)num_ships_to_take_a_planet_(src_planets[i], tgt.id);
+      if(best_remaining_ships < remaining_ships) {
+        best_source = i;
+        best_remaining_ships = remaining_ships;
+      }
+    }
+
+    // Attacking the target, if possible
+    if(best_remaining_ships > 0) {
+      const unsigned int num_ships_to_send = num_ships_to_take_a_planet_(src_planets[best_source], tgt.id);
+
+      map().bot_launch_fleet(src_planets[best_source], tgt.id, num_ships_to_send);
+      LOG << "Attacking planet " << tgt.id << " from " << src_planets[best_source];
+      LOG << " with " << num_ships_to_send << " ships." << endl;
+    } else LOG << "Can't attack the planet " << tgt.id << ". Not enough ships." << endl;
+  }
 }
 
 // Make a decision for a backline planet
@@ -178,9 +211,9 @@ void SageBot::process_backline_planet_(planet_id id) {
 
     // Sending reinforcements
     if(best_planet_to_reinforce != 0) {
-      map().bot_launch_fleet(id, best_planet_to_reinforce, map().planet(id).current_num_ships());
       LOG << "sending reinforcements of " << map().planet(id).current_num_ships() << " ships to the planet "
           << best_planet_to_reinforce << "." << endl;
+      map().bot_launch_fleet(id, best_planet_to_reinforce, map().planet(id).current_num_ships());
     } else LOG << "no potential target, no further action." << endl;
   } else LOG << "not enough ships, no further action." << endl;
 }
