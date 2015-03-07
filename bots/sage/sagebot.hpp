@@ -44,8 +44,8 @@ namespace sage {
   public:
     DISABLE_COPY(SageBot)
 
-    SageBot(): neighborhood_radius_multiplier_(4), num_ships_per_reinforcement_(10),
-      planets_mean_distance_(0), neighborhood_radius_(0) {}
+    SageBot(): num_ships_per_reinforcement_(10), planets_mean_distance_(0),
+      neighborhood_radius_multiplier_(1), neighborhood_radius_(0) {}
     virtual ~SageBot() {}
 
   protected:
@@ -67,11 +67,11 @@ namespace sage {
     void compute_planets_neighborhoods_();
 
     // User defined bot parameters
-    const unsigned int  neighborhood_radius_multiplier_;
     const unsigned int  num_ships_per_reinforcement_;
 
     // Precomputed map parameters
     unsigned int  planets_mean_distance_;
+    unsigned int  neighborhood_radius_multiplier_;
     unsigned int  neighborhood_radius_;
 
     // Precomputed planets neighborhoods

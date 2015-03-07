@@ -45,10 +45,21 @@ void SageBot::init_() {
   LOG << "\tplanets_mean_distance = " << planets_mean_distance_ << endl;
 
   // Precomputing planets neighborhoods
-  neighborhood_radius_ = neighborhood_radius_multiplier_*planets_mean_distance_;
-  LOG << "\tneighborhood_radius = " << neighborhood_radius_ << endl;
-  LOG << "\tPrecomputing planets neighborhoods..." << endl;
-  compute_planets_neighborhoods_();
+  bool ok = false;
+  neighborhood_radius_multiplier_ = 0;
+
+  while(!ok) {
+    ++neighborhood_radius_multiplier_;
+    neighborhood_radius_ = neighborhood_radius_multiplier_*planets_mean_distance_;
+    LOG << "\tneighborhood_radius = " << neighborhood_radius_ << endl;
+    LOG << "\tPrecomputing planets neighborhoods..." << endl;
+    compute_planets_neighborhoods_();
+
+    ok = true;
+    for(planet_id id = 1; id <= map().num_planets(); ++id) {
+      if(neighbors_(id).empty()) ok = false;
+    }
+  }
 
   for(planet_id id = 1; id <= map().num_planets(); ++id) {
     LOG << "\t\t" << id << " -> ";
@@ -116,50 +127,37 @@ float SageBot::compute_target_planet_score_(planet_id src, planet_id dst) const 
 void SageBot::process_frontline_planet_(planet_id id) {
   LOG << "Frontline planet " << id << ": ";
 
-  // Computing a safe number of ships
-//  unsigned int safe_number_of_ships = 0;
-//  for(size_t i = 0; i < neighbors_(id).size(); ++i) {
-//    if(is_owned_by_enemy_team_(map().planet(neighbors_(id)[i]))) {
-//      const unsigned int ships = num_ships_to_take_a_planet_(neighbors_(id)[i], id);
-//      if(ships > safe_number_of_ships) safe_number_of_ships = ships;
-//    }
-//  }
+  // Searching for a target planet
+  planet_id best_target_planet  = 0;
+  float     best_target_score   = 0.0f;
+  for(size_t i = 0; i < neighbors_(id).size(); ++i) {
+    const Planet& dst_planet = map().planet(neighbors_(id)[i]);
 
-//  if(map().planet(id).current_num_ships() > safe_number_of_ships) {
-    // Planet have enough ship to attack
+    // We only attack other players planets if we know all our allies
+    // to not accidently kill one.
+    bool is_targetable = false;
+    if(is_neutral_(dst_planet)) is_targetable = true;
+    else if(team_is_complete_() && is_owned_by_enemy_team_(dst_planet)) is_targetable = true;
 
-    // Searching for a target planet
-    planet_id best_target_planet  = 0;
-    float     best_target_score   = 0.0f;
-    for(size_t i = 0; i < neighbors_(id).size(); ++i) {
-      const Planet& dst_planet = map().planet(neighbors_(id)[i]);
-
-      // We only attack other players planets if we know all our allies
-      // to not accidently kill one.
-      bool is_targetable = false;
-      if(is_neutral_(dst_planet)) is_targetable = true;
-      else if(team_is_complete_() && is_owned_by_enemy_team_(dst_planet)) is_targetable = true;
-
-      if(is_targetable && !map().bot_planet_is_targeted_by_a_fleet(dst_planet.id())) {
-        const float score = compute_target_planet_score_(id, dst_planet.id());
-        if(best_target_planet == 0 || best_target_score < score) {
-          best_target_planet = dst_planet.id();
-          best_target_score = score;
-        }
+    if(is_targetable && !map().bot_planet_is_targeted_by_a_fleet(dst_planet.id())) {
+      const float score = compute_target_planet_score_(id, dst_planet.id());
+      if(best_target_planet == 0 || best_target_score < score) {
+        best_target_planet = dst_planet.id();
+        best_target_score = score;
       }
     }
+  }
 
-    if(best_target_planet != 0) {
-      const unsigned int num_ships_to_send = num_ships_to_take_a_planet_(id, best_target_planet);
+  if(best_target_planet != 0) {
+    const unsigned int num_ships_to_send = num_ships_to_take_a_planet_(id, best_target_planet);
 
-      if(num_ships_to_send <= map().planet(id).current_num_ships() /* &&
-         map().planet(id).current_num_ships() - num_ships_to_send > safe_number_of_ships */) {
-        map().bot_launch_fleet(id, best_target_planet, num_ships_to_send);
-        LOG << "targeting " << best_target_planet << " with " << num_ships_to_send << " ships." << endl;
-      } else LOG << "targeting " << best_target_planet << " would put this planet in danger, no further action."
-                 << endl;
-    } else LOG << "no potential target, no further action." << endl;
-//  } else LOG << "in danger, no further action." << endl;
+    if(num_ships_to_send <= map().planet(id).current_num_ships() /* &&
+       map().planet(id).current_num_ships() - num_ships_to_send > safe_number_of_ships */) {
+      map().bot_launch_fleet(id, best_target_planet, num_ships_to_send);
+      LOG << "targeting " << best_target_planet << " with " << num_ships_to_send << " ships." << endl;
+    } else LOG << "targeting " << best_target_planet << " would put this planet in danger, no further action."
+               << endl;
+  } else LOG << "no potential target, no further action." << endl;
 }
 
 // Make a decision for a backline planet
@@ -208,6 +206,7 @@ unsigned int SageBot::compute_planets_mean_distance_() const {
 
 // Precompute planets neighborhoods
 void SageBot::compute_planets_neighborhoods_() {
+  neighborhoods_.clear();
   neighborhoods_.resize(map().num_planets());
 
   for(planet_id id = 1; id <= map().num_planets(); ++id) {
