@@ -32,6 +32,7 @@
 #define _TEAMPLANETS_SAGE_SAGE_HPP_
 
 #include <vector>
+#include <chrono>
 #include "bot.hpp"
 #include "utils.hpp"
 
@@ -41,6 +42,21 @@ namespace sage {
     typedef std::vector<team_planets::planet_id>  neighbors_list;
     typedef std::vector<neighbors_list>           neighborhoods_list;
 
+    // Decision tree
+    enum Player_ { Myself, Enemy };
+    struct Leaf_ {
+      // This decision leaf context
+      std::vector<team_planets::Fleet>  orders;
+      team_planets::Map                 map;
+      Player_                           current_player;
+
+      // This leaf score
+      float                             score;
+
+      // This leaf childrens
+      std::vector<Leaf_>                childrens;
+    };
+
   public:
     DISABLE_COPY(SageBot)
 
@@ -48,18 +64,20 @@ namespace sage {
       neighborhood_radius_multiplier_(1), neighborhood_radius_(0) {}
     virtual ~SageBot() {}
 
+    neighbors_list& neighbors(team_planets::planet_id planet) { return neighborhoods_[planet - 1]; }
+    const neighbors_list& neighbors(team_planets::planet_id planet) const { return neighborhoods_[planet - 1]; }
+
   protected:
     virtual void init_();
     virtual void perform_turn_();
-
-    neighbors_list& neighbors_(team_planets::planet_id planet) { return neighborhoods_[planet - 1]; }
-    const neighbors_list& neighbors_(team_planets::planet_id planet) const { return neighborhoods_[planet - 1]; }
 
     bool is_frontline_(team_planets::planet_id id) const;
     unsigned int num_ships_to_take_a_planet_(team_planets::planet_id src, team_planets::planet_id dst) const;
 
     void take_attack_decisions_();
     void process_backline_planet_(team_planets::planet_id id);
+
+    void generate_decisions_(Leaf_& leaf) const;
 
   private:
     unsigned int compute_planets_mean_distance_() const;
@@ -74,11 +92,14 @@ namespace sage {
     unsigned int  neighborhood_radius_;
 
     // Precomputed planets neighborhoods
-    neighborhoods_list                            neighborhoods_;
+    neighborhoods_list  neighborhoods_;
 
     // Per turn data structures
     std::vector<team_planets::planet_id>  frontline_planets_;
     std::vector<team_planets::planet_id>  backline_planets_;
+
+    // Decision related data
+    std::chrono::time_point<std::chrono::high_resolution_clock> starting_time_;
   };
 }
 

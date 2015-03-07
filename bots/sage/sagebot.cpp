@@ -30,6 +30,8 @@
 
 #include <algorithm>
 #include "log.hpp"
+#include "my_decision.hpp"
+#include "enemy_decision.hpp"
 #include "sagebot.hpp"
 
 using namespace std;
@@ -57,7 +59,7 @@ void SageBot::init_() {
 
     ok = true;
     for(planet_id id = 1; id <= map().num_planets(); ++id) {
-      if(neighbors_(id).size() < 2) ok = false;
+      if(neighbors(id).size() < 2) ok = false;
     }
   }
 
@@ -71,39 +73,48 @@ void SageBot::init_() {
 }
 
 void SageBot::perform_turn_() {
+  // Initialize decision tree root
+  Leaf_ decision_root;
+  decision_root.map = map();
+  decision_root.current_player = Myself;
+  decision_root.score = 0.0f;
+
+  starting_time_ = chrono::high_resolution_clock::now();
+  generate_decisions_(decision_root);
+
   // Classifying planets as front/back line
-  frontline_planets_.clear();
-  backline_planets_.clear();
-  for_each(map().planets_begin(), map().planets_end(), [this](const Planet& planet) {
-    if(is_owned_by_me_(planet)) {
-      if(is_frontline_(planet.id())) frontline_planets_.push_back(planet.id());
-      else backline_planets_.push_back(planet.id());
-    }
-  });
-
-  LOG << "frontline planets = ";
-  for(planet_id id:frontline_planets_) LOG << id << " ";
-  LOG << endl << "backline planets = ";
-  for(planet_id id:backline_planets_) LOG << id << " ";
-  LOG << endl << endl;
-
-  // Processing frontline planets
-  //for(planet_id id:frontline_planets_) process_frontline_planet_(id);
-  take_attack_decisions_();
-  LOG << endl;
-
-  // Processing backline planets
-  for(planet_id id:backline_planets_) process_backline_planet_(id);
-  LOG << endl;
+//  frontline_planets_.clear();
+//  backline_planets_.clear();
+//  for_each(map().planets_begin(), map().planets_end(), [this](const Planet& planet) {
+//    if(is_owned_by_me_(planet)) {
+//      if(is_frontline_(planet.id())) frontline_planets_.push_back(planet.id());
+//      else backline_planets_.push_back(planet.id());
+//    }
+//  });
+//
+//  LOG << "frontline planets = ";
+//  for(planet_id id:frontline_planets_) LOG << id << " ";
+//  LOG << endl << "backline planets = ";
+//  for(planet_id id:backline_planets_) LOG << id << " ";
+//  LOG << endl << endl;
+//
+//  // Processing frontline planets
+//  //for(planet_id id:frontline_planets_) process_frontline_planet_(id);
+//  take_attack_decisions_();
+//  LOG << endl;
+//
+//  // Processing backline planets
+//  for(planet_id id:backline_planets_) process_backline_planet_(id);
+//  LOG << endl;
 }
 
 // Classify a planet as front/back line
 bool SageBot::is_frontline_(planet_id id) const {
   bool frontline = false;
 
-  for(size_t i = 0; i < neighbors_(id).size(); ++i) {
-    const Planet& planet = map().planet(neighbors_(id)[i]);
-    if(is_neutral_(planet) || is_owned_by_enemy_team_(planet)) frontline = true;
+  for(size_t i = 0; i < neighbors(id).size(); ++i) {
+    const Planet& planet = map().planet(neighbors(id)[i]);
+    if(is_neutral(planet) || is_owned_by_enemy_team(planet)) frontline = true;
   }
 
   return frontline;
@@ -111,7 +122,7 @@ bool SageBot::is_frontline_(planet_id id) const {
 
 // Compute the number of ships needed to take a planet
 unsigned int SageBot::num_ships_to_take_a_planet_(planet_id src, planet_id dst) const {
-  if(is_neutral_(map().planet(dst)))
+  if(is_neutral(map().planet(dst)))
     return map().planet(dst).current_num_ships() + 1;
 
   const unsigned int travel_dist = map().planet(dst).compute_travel_distance(map().planet(src));
@@ -128,15 +139,15 @@ void SageBot::take_attack_decisions_() {
 
   // Computing the list of potential targets
   for(planet_id id:frontline_planets_) {
-    for(size_t i = 0; i < neighbors_(id).size(); ++i) {
-      const Planet& dst_planet = map().planet(neighbors_(id)[i]);
+    for(size_t i = 0; i < neighbors(id).size(); ++i) {
+      const Planet& dst_planet = map().planet(neighbors(id)[i]);
 
       Target tgt;
       tgt.id = dst_planet.id();
       tgt.score = (1.0f/(float)(dst_planet.current_num_ships() + 1))*(float)dst_planet.ship_increase();
 
-      bool is_potential_target = is_neutral_(dst_planet)
-          || (team_is_complete_() && is_owned_by_enemy_team_(dst_planet));
+      bool is_potential_target = is_neutral(dst_planet)
+          || (team_is_complete() && is_owned_by_enemy_team(dst_planet));
 
       if(is_potential_target && !map().bot_planet_is_targeted_by_a_fleet(dst_planet.id())) {
         auto it = find_if(potential_targets.begin(), potential_targets.end(), [&tgt](const Target& target) {
@@ -163,10 +174,10 @@ void SageBot::take_attack_decisions_() {
     // Finding potential sources
     vector<planet_id> src_planets;
     for(planet_id id:frontline_planets_) {
-      auto it = find_if(neighbors_(id).begin(), neighbors_(id).end(), [&tgt](const planet_id nid) {
+      auto it = find_if(neighbors(id).begin(), neighbors(id).end(), [&tgt](const planet_id nid) {
         return nid == tgt.id;
       });
-      if(it != end(neighbors_(id))) src_planets.push_back(id);
+      if(it != end(neighbors(id))) src_planets.push_back(id);
     }
 
     // Finding the one having the more ships after attacking this target
@@ -250,4 +261,15 @@ void SageBot::compute_planets_neighborhoods_() {
       }
     }
   }
+}
+
+// Generate a list of possible decisions for a given decision leaf
+void SageBot::generate_decisions_(Leaf_& leaf) const {
+  Decision* decision = nullptr;
+  if(leaf.current_player == Myself) decision = new MyDecision(*this, leaf.map);
+  else decision = new EnemyDecision(*this, leaf.map);
+
+  Decision::decisions_list decisions = decision->generate_decisions();
+
+  delete decision;
 }

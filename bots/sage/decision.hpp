@@ -1,4 +1,4 @@
-// bot.hpp - Bot class definition
+// decision.hpp - Decision class definition
 // sage - A TeamPlanets bot written for MachineZone job application
 //
 // Copyright (c) 2015 Vadim Litvinov <vadim_litvinov@fastmail.com>
@@ -28,59 +28,39 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef _TEAMPLANETS_SAGE_BOT_HPP_
-#define _TEAMPLANETS_SAGE_BOT_HPP_
+#ifndef _TEAMPLANETS_SAGE_DECISION_HPP_
+#define _TEAMPLANETS_SAGE_DECISION_HPP_
 
 #include <vector>
-#include <chrono>
-#include "map.hpp"
-#include "team.hpp"
-#include "utils.hpp"
+#include "sagebot.hpp"
 
 namespace sage {
-  class Bot {
+  class Decision {
   public:
-    DISABLE_COPY(Bot)
+    typedef std::vector<team_planets::Fleet>  orders_list;
+    typedef std::vector<orders_list>          decisions_list;
 
-    Bot(): initialized_(false), current_turn_(1) {}
-    virtual ~Bot() {}
+    Decision(const SageBot& bot, const team_planets::Map& map);
+    virtual ~Decision();
 
-    // Planet ownership checks
-    bool team_is_complete() const { return team_.is_complete(); }
-    bool is_owned_by_me(const team_planets::Planet& planet) const { return planet.current_owner() == map_.myself(); }
-    bool is_neutral(const team_planets::Planet& planet) const { return planet.current_owner() == neutral_player; }
-    bool is_owned_by_my_team(const team_planets::Planet& planet) const { return team_.is_owned_by_my_team(planet); }
-    bool is_owned_by_enemy_team(const team_planets::Planet& planet) const {
-      return team_.is_owned_by_enemy_team(planet);
-    }
-
-    // Bot main loop
-    int run();
+    virtual decisions_list generate_decisions();
 
   protected:
-    // Various general info
-    unsigned int current_turn() const { return current_turn_; }
+    std::vector<team_planets::planet_id>& frontline_planets() { return frontline_planets_; }
+    const std::vector<team_planets::planet_id>& frontline_planets() const { return frontline_planets_; }
+    std::vector<team_planets::planet_id>& backline_planets() { return backline_planets_; }
+    const std::vector<team_planets::planet_id>& backline_planets() const { return backline_planets_; }
 
-    // Access to the map
-    team_planets::Map& map() { return map_; }
-    const team_planets::Map& map() const { return map_; }
-
-    // Function to overload
-    virtual void init_();
-    virtual void perform_turn_();
+    void perform_backline_frontline_classification_();
 
   private:
-    void begin_turn_();
-    void end_turn_();
+    bool is_frontline_(team_planets::planet_id id) const;
 
-    void initialize_bot_();
+    const SageBot&            bot_;
+    const team_planets::Map&  map_;
 
-    bool                                                        initialized_;
-    unsigned int                                                current_turn_;
-    std::chrono::time_point<std::chrono::high_resolution_clock> starting_time_;
-
-    team_planets::Map                     map_;
-    Team                                  team_;
+    std::vector<team_planets::planet_id>  frontline_planets_;
+    std::vector<team_planets::planet_id>  backline_planets_;
   };
 }
 
