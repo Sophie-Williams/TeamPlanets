@@ -46,12 +46,16 @@ namespace sage {
     virtual decisions_list generate_decisions();
 
   protected:
+    const SageBot& bot() const { return bot_; }
+    const team_planets::Map& map() const { return map_; }
+
     std::vector<team_planets::planet_id>& frontline_planets() { return frontline_planets_; }
     const std::vector<team_planets::planet_id>& frontline_planets() const { return frontline_planets_; }
     std::vector<team_planets::planet_id>& backline_planets() { return backline_planets_; }
     const std::vector<team_planets::planet_id>& backline_planets() const { return backline_planets_; }
 
     void perform_backline_frontline_classification_();
+    unsigned int num_ships_to_take_a_planet_(team_planets::planet_id src, team_planets::planet_id dst) const;
 
   private:
     bool is_frontline_(team_planets::planet_id id) const;

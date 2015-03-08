@@ -80,7 +80,32 @@ void SageBot::perform_turn_() {
   decision_root.score = 0.0f;
 
   starting_time_ = chrono::high_resolution_clock::now();
-  generate_decisions_(decision_root);
+  //generate_decisions_(decision_root);
+  Decision* decision = new MyDecision(*this, decision_root.map);
+  Decision::decisions_list decisions = decision->generate_decisions();
+  delete decision;
+
+  size_t n = 0;
+  for(Decision::orders_list orders:decisions) {
+    LOG << "Decision " << n << ":" << endl;
+    for(const Fleet& fleet:orders) LOG << fleet << endl;
+    LOG << endl;
+    ++n;
+  }
+
+  size_t biggest_decision = 0;
+  size_t biggest_decision_size = decisions[0].size();
+  for(size_t i = 1; i < decisions.size(); ++i) {
+    if(biggest_decision_size < decisions[i].size()) {
+      biggest_decision = i;
+      biggest_decision_size = decisions[i].size();
+    }
+  }
+
+  LOG << "Selected decision is " << biggest_decision << endl;
+  for(const Fleet& fleet:decisions[biggest_decision]) {
+    map().bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
+  }
 
   // Classifying planets as front/back line
 //  frontline_planets_.clear();

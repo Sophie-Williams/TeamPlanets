@@ -58,6 +58,15 @@ void Decision::perform_backline_frontline_classification_() {
   });
 }
 
+// Compute the number of ships needed to take a planet
+unsigned int Decision::num_ships_to_take_a_planet_(planet_id src, planet_id dst) const {
+  if(bot().is_neutral(map().planet(dst)))
+    return map().planet(dst).current_num_ships() + 1;
+
+  const unsigned int travel_dist = map().planet(dst).compute_travel_distance(map().planet(src));
+  return map().planet(dst).current_num_ships() + travel_dist*map().planet(dst).ship_increase() + 1;
+}
+
 bool Decision::is_frontline_(planet_id id) const {
   bool frontline = false;
 

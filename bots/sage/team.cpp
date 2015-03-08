@@ -55,8 +55,11 @@ uint32_t Team::process_message(player_id myself, uint32_t msg) {
 
   // Processing input message
   if(msg != 0) {
-    if(msg != (uint32_t)myself) team_.push_back((player_id)msg);
-    else team_is_complete_ = true;
+    if(msg != (uint32_t)myself) {
+      auto it = find(team_.begin(), team_.end(), (player_id)msg);
+      if(it == end(team_)) team_.push_back((player_id)msg);
+      else team_is_complete_ = true;
+    } else team_is_complete_ = true;
   }
 
   // Generating output message
