@@ -99,7 +99,7 @@ void SageBot::perform_turn_() {
 
   if(!root.childrens.empty()) {
     size_t best_solution = 0;
-    size_t best_solution_score = root.childrens[0].score;
+    float best_solution_score = root.childrens[0].score;
 
     for(size_t i = 0; i < root.childrens.size(); ++i)
       if(best_solution_score < root.childrens[i].score) {
@@ -160,8 +160,8 @@ void SageBot::generate_possibilities_tree_(Leaf_& root) {
   while(cur_duration < max_tree_comp_duration_) {
     next_level.clear();
 
-    for(Leaf_* current_leaf_ptr:current_level) {
-      Leaf_& current_leaf = *current_leaf_ptr;
+    for(size_t n = 0; n < current_level.size() && cur_duration < max_tree_comp_duration_; ++n) {
+      Leaf_& current_leaf = *(current_level[n]);
 
       // Checking if the current leaf is not an end game position
       if(!is_game_over_(current_leaf)) {
@@ -179,6 +179,8 @@ void SageBot::generate_possibilities_tree_(Leaf_& root) {
             next_level.push_back(&(current_leaf.childrens[i].childrens[j]));
           }
       }
+
+      cur_duration = current_tree_gen_duration_();
     }
 
     current_level.swap(next_level);
@@ -371,7 +373,7 @@ void SageBot::compute_possibility_tree_scores_(Leaf_& root) const {
         current_state.leaf->score = 0.0f;
         for(const Leaf_& child:current_state.leaf->childrens)
           current_state.leaf->score += child.score;
-        //current_state.leaf->score /= (float)current_state.leaf->childrens.size();
+        current_state.leaf->score /= (float)current_state.leaf->childrens.size();
       } else {
         // We need to compute the score of the childrens first
         current_state.second_pass = true;
@@ -389,9 +391,8 @@ void SageBot::compute_possibility_tree_scores_(Leaf_& root) const {
 }
 
 float SageBot::compute_final_state_score_(const Leaf_& leaf) const {
-  //const float planet_coeff = 0.1f;
-  //const float ship_coeff = 0.0001f;
-  //const float neutral_planet_coeff = 0.3f;
+  const float planet_coeff = 0.1f;
+  const float ship_coeff = 0.0001f;
 
   // Evaluating the number of ships and planets for each team
   unsigned int my_team_planets = 0, my_team_ships = 0;
@@ -415,10 +416,8 @@ float SageBot::compute_final_state_score_(const Leaf_& leaf) const {
 
   if(my_team_planets == 0) return -1000.0f;    // We are dead, very bad
   if(enemy_team_planets == 0) return 1000.0f;  // Enemy is dead, very good
-//  return /* (float)my_team_ships*ship_coeff + */ (float)my_team_planets*planet_coeff
-//         /* - (float)enemy_team_ships*ship_coeff */ - (float)enemy_team_planets*planet_coeff;
-//         //- (float)neutral_planets*neutral_planet_coeff;
-  return (float)my_team_planets;
+  return (float)my_team_ships*ship_coeff + (float)my_team_planets*planet_coeff
+         - (float)enemy_team_ships*ship_coeff - (float)enemy_team_planets*planet_coeff;
 }
 
 // Compute the number of ships needed to take a planet
