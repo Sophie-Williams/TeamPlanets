@@ -77,13 +77,19 @@ namespace sage {
     void compute_planets_neighborhoods_();
 
     void generate_possibilities_tree_(Leaf_& root);
-    bool generate_possible_turns_(Leaf_& leaf) const;
-    bool generate_enemy_turns_(Leaf_& leaf) const;
+    void generate_possible_turns_(Leaf_& leaf) const;
+    void generate_enemy_turns_(Leaf_& leaf) const;
+    void generate_passive_orders_(Leaf_& leaf) const;
+    void update_child_leaves_maps(Leaf_& leaf) const;
     bool is_game_over_(const Leaf_& leaf) const;
     std::chrono::milliseconds current_tree_gen_duration_() const;
 
     void compute_possibility_tree_scores_(Leaf_& root) const;
     float compute_final_state_score_(const Leaf_& leaf) const;
+
+    unsigned int num_ships_to_take_a_planet_(const Leaf_& leaf, team_planets::planet_id src,
+                                             team_planets::planet_id dst) const;
+    std::vector<team_planets::Fleet> passive_enemy_team_orders_(Leaf_& leaf) const;
 
     // Precomputed map parameters
     unsigned int  planets_mean_distance_;

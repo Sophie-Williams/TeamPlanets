@@ -148,116 +148,178 @@ void SageBot::compute_planets_neighborhoods_() {
 
 // Generate the tree of possibilities
 void SageBot::generate_possibilities_tree_(Leaf_& root) {
-  // Initializing stack
-  typedef std::stack<Leaf_*, std::vector<Leaf_*> > leaves_stack;
-  leaves_stack S;
-  S.push(&root);
+  // Initializing the process
+  vector<Leaf_*>  current_level;
+  vector<Leaf_*>  next_level;
+  current_level.push_back(&root);
 
   // Main loop
   start_time_ = chrono::high_resolution_clock::now();
-  max_tree_depth_ = root.current_turn;
-  bool time_stop = false;
+  chrono::milliseconds cur_duration(0);
+  max_tree_depth_ = 0;
+  while(cur_duration < max_tree_comp_duration_) {
+    next_level.clear();
 
-  while(!S.empty() && !time_stop) {
-    // Extracting current leaf
-    Leaf_& current_leaf = *(S.top());
-    S.pop();
-    if(current_leaf.current_turn > max_tree_depth_) max_tree_depth_ = current_leaf.current_turn;
+    for(Leaf_* current_leaf_ptr:current_level) {
+      Leaf_& current_leaf = *current_leaf_ptr;
 
-    // Checking if the current leaf is not an end game position
-    if(!is_game_over_(current_leaf)) {
-      // Generating childrens
-      time_stop = generate_possible_turns_(current_leaf);
-      if(time_stop) {
-        current_leaf.childrens.clear();
-        continue;
-      }
+      // Checking if the current leaf is not an end game position
+      if(!is_game_over_(current_leaf)) {
+        // Generating childrens
+        generate_possible_turns_(current_leaf);
+        generate_enemy_turns_(current_leaf);
+        generate_passive_orders_(current_leaf);
 
-      // Generate enemy responses
-      time_stop = generate_enemy_turns_(current_leaf);
-      if(time_stop) {
-        current_leaf.childrens.clear();
-        continue;
-      }
+        // Updating the children maps
+        update_child_leaves_maps(current_leaf);
 
-      // Updating stack, if the computation time is not over
-      for(size_t i = 0; i < current_leaf.childrens.size() && !time_stop; ++i)
-        for(size_t j = 0; j < current_leaf.childrens[i].childrens.size() && !time_stop; ++j) {
-          if(i == 0 && j == 0) {
-            // This is a no-op, but it may have some fleets in flight!
-            if(current_leaf.childrens[i].childrens[j].map.num_fleets() == 0)
-              continue; // A real no-op!
+        // Creating the next level
+        for(size_t i = 0; i < current_leaf.childrens.size(); ++i)
+          for(size_t j = 0; j < current_leaf.childrens[i].childrens.size(); ++j) {
+            next_level.push_back(&(current_leaf.childrens[i].childrens[j]));
           }
-
-          // Checking current computation time
-          const chrono::milliseconds cur_duration = current_tree_gen_duration_();
-          if(cur_duration < max_tree_comp_duration_) S.push(&(current_leaf.childrens[i].childrens[j]));
-          else time_stop = true;
-        }
+      }
     }
-  }
 
-  max_tree_depth_ -= current_turn();
+    current_level.swap(next_level);
+    ++max_tree_depth_;
+    cur_duration = current_tree_gen_duration_();
+  }
 }
 
-bool SageBot::generate_possible_turns_(Leaf_& leaf) const {
+//void SageBot::generate_possibilities_tree_(Leaf_& root) {
+//  // Initializing stack
+//  typedef std::stack<Leaf_*, std::vector<Leaf_*> > leaves_stack;
+//  leaves_stack S;
+//  S.push(&root);
+//
+//  // Main loop
+//  start_time_ = chrono::high_resolution_clock::now();
+//  max_tree_depth_ = root.current_turn;
+//  bool time_stop = false;
+//
+//  while(!S.empty() && !time_stop) {
+//    // Extracting current leaf
+//    Leaf_& current_leaf = *(S.top());
+//    S.pop();
+//    if(current_leaf.current_turn > max_tree_depth_) max_tree_depth_ = current_leaf.current_turn;
+//
+//    // Checking if the current leaf is not an end game position
+//    if(!is_game_over_(current_leaf)) {
+//      // Generating childrens
+//      time_stop = generate_possible_turns_(current_leaf);
+//      if(time_stop) {
+//        current_leaf.childrens.clear();
+//        continue;
+//      }
+//
+//      // Generate enemy responses
+//      time_stop = generate_enemy_turns_(current_leaf);
+//      if(time_stop) {
+//        current_leaf.childrens.clear();
+//        continue;
+//      }
+//
+//      // Generate passive moves
+//      time_stop = generate_passive_orders_(current_leaf);
+//      if(time_stop) {
+//        current_leaf.childrens.clear();
+//        continue;
+//      }
+//
+//      // Updating the maps
+//      time_stop = update_child_leaves_maps(current_leaf);
+//      if(time_stop) {
+//        current_leaf.childrens.clear();
+//        continue;
+//      }
+//
+//      // Updating stack, if the computation time is not over
+//      for(size_t i = 0; i < current_leaf.childrens.size() && !time_stop; ++i)
+//        for(size_t j = 0; j < current_leaf.childrens[i].childrens.size() && !time_stop; ++j) {
+//          if(i == 0 && j == 0) {
+//            // This is a no-op, but it may have some fleets in flight!
+//            if(current_leaf.childrens[i].childrens[j].map.num_fleets() == 0)
+//              continue; // A real no-op!
+//          }
+//
+//          // Checking current computation time
+//          const chrono::milliseconds cur_duration = current_tree_gen_duration_();
+//          if(cur_duration < max_tree_comp_duration_) S.push(&(current_leaf.childrens[i].childrens[j]));
+//          else time_stop = true;
+//        }
+//    }
+//  }
+//
+//  max_tree_depth_ -= current_turn();
+//}
+
+void SageBot::generate_possible_turns_(Leaf_& leaf) const {
   // Generating possible decisions
   MyDecision decision(*this, leaf.map);
   Decision::decisions_list posibilities = decision.generate_decisions();
 
   // Generating child leaves
-  bool time_stop = false;
   for(Decision::orders_list& posibility:posibilities) {
-    const chrono::milliseconds cur_duration = current_tree_gen_duration_();
-    if(cur_duration < max_tree_comp_duration_) {
-      leaf.childrens.emplace_back();
-      Leaf_& new_leaf = leaf.childrens.back();
+    leaf.childrens.emplace_back();
+    Leaf_& new_leaf = leaf.childrens.back();
 
-      new_leaf.current_turn = leaf.current_turn;
-      new_leaf.current_player = Enemy;
-      new_leaf.orders = posibility;
-    } else {
-      time_stop = true;
-      break;
-    }
+    new_leaf.current_turn = leaf.current_turn;
+    new_leaf.current_player = Enemy;
+    new_leaf.orders = posibility;
   }
-
-  return time_stop;
 }
 
-bool SageBot::generate_enemy_turns_(Leaf_& leaf) const {
+void SageBot::generate_enemy_turns_(Leaf_& leaf) const {
   // Generating possible decisions
   EnemyDecision decision(*this, leaf.map);
   Decision::decisions_list posibilities = decision.generate_decisions();
 
   // Updating child leaves with enemy moves
-  bool time_stop = false;
-  for(size_t i = 0; i < leaf.childrens.size() && !time_stop; ++i) {
+  for(size_t i = 0; i < leaf.childrens.size(); ++i) {
     Leaf_& child = leaf.childrens[i];
 
-    for(size_t j = 0; j < posibilities.size() && !time_stop; ++j) {
+    for(size_t j = 0; j < posibilities.size(); ++j) {
       Decision::orders_list& posibility = posibilities[j];
 
-      const chrono::milliseconds cur_duration = current_tree_gen_duration_();
-      if(cur_duration < max_tree_comp_duration_) {
-        child.childrens.emplace_back();
-        Leaf_& new_leaf = child.childrens.back();
+      child.childrens.emplace_back();
+      Leaf_& new_leaf = child.childrens.back();
 
-        new_leaf.current_turn = leaf.current_turn + 1;
-        new_leaf.current_player = Myself;
+      new_leaf.current_turn = leaf.current_turn + 1;
+      new_leaf.current_player = Myself;
 
-        // Updating the map
-        new_leaf.map = leaf.map;
-        for(const Fleet& fleet:child.orders)
-          new_leaf.map.bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
-        for(const Fleet& fleet:posibility)
-          new_leaf.map.bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
-        new_leaf.map.engine_perform_turn();
-      } else time_stop = true;
+      // Updating the map
+      new_leaf.map = leaf.map;
+      for(const Fleet& fleet:child.orders)
+        new_leaf.map.bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
+      for(const Fleet& fleet:posibility)
+        new_leaf.map.bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
     }
   }
+}
 
-  return time_stop;
+void SageBot::generate_passive_orders_(Leaf_& leaf) const {
+  vector<Fleet> orders = passive_enemy_team_orders_(leaf);
+
+  for(size_t i = 0; i < leaf.childrens.size(); ++i) {
+    Leaf_& child = leaf.childrens[i];
+    for(size_t j = 0; j < child.childrens.size(); ++j) {
+      Leaf_& current_leaf = child.childrens[j];
+
+      for(const Fleet& fleet:orders)
+        current_leaf.map.bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
+    }
+  }
+}
+
+void SageBot::update_child_leaves_maps(Leaf_& leaf) const {
+  for(size_t i = 0; i < leaf.childrens.size(); ++i) {
+    Leaf_& child = leaf.childrens[i];
+    for(size_t j = 0; j < child.childrens.size(); ++j) {
+      Leaf_& current_leaf = child.childrens[j];
+      current_leaf.map.engine_perform_turn();
+    }
+  }
 }
 
 bool SageBot::is_game_over_(const Leaf_& leaf) const {
@@ -309,6 +371,7 @@ void SageBot::compute_possibility_tree_scores_(Leaf_& root) const {
         current_state.leaf->score = 0.0f;
         for(const Leaf_& child:current_state.leaf->childrens)
           current_state.leaf->score += child.score;
+        //current_state.leaf->score /= (float)current_state.leaf->childrens.size();
       } else {
         // We need to compute the score of the childrens first
         current_state.second_pass = true;
@@ -326,9 +389,9 @@ void SageBot::compute_possibility_tree_scores_(Leaf_& root) const {
 }
 
 float SageBot::compute_final_state_score_(const Leaf_& leaf) const {
-  const float planet_coeff = 0.1f;
-  const float ship_coeff = 0.0001f;
-  const float neutral_planet_coeff = 0.3f;
+  //const float planet_coeff = 0.1f;
+  //const float ship_coeff = 0.0001f;
+  //const float neutral_planet_coeff = 0.3f;
 
   // Evaluating the number of ships and planets for each team
   unsigned int my_team_planets = 0, my_team_ships = 0;
@@ -352,7 +415,84 @@ float SageBot::compute_final_state_score_(const Leaf_& leaf) const {
 
   if(my_team_planets == 0) return -1000.0f;    // We are dead, very bad
   if(enemy_team_planets == 0) return 1000.0f;  // Enemy is dead, very good
-  return (float)my_team_ships*ship_coeff + (float)my_team_planets*planet_coeff
-         - (float)enemy_team_ships*ship_coeff - (float)enemy_team_planets*planet_coeff
-         - (float)neutral_planets*neutral_planet_coeff;
+//  return /* (float)my_team_ships*ship_coeff + */ (float)my_team_planets*planet_coeff
+//         /* - (float)enemy_team_ships*ship_coeff */ - (float)enemy_team_planets*planet_coeff;
+//         //- (float)neutral_planets*neutral_planet_coeff;
+  return (float)my_team_planets;
+}
+
+// Compute the number of ships needed to take a planet
+unsigned int SageBot::num_ships_to_take_a_planet_(const Leaf_& leaf, planet_id src, planet_id dst) const {
+  if(is_neutral(leaf.map.planet(dst)))
+    return map().planet(dst).current_num_ships() + 1;
+
+  const unsigned int travel_dist = leaf.map.planet(dst).compute_travel_distance(leaf.map.planet(src));
+  return leaf.map.planet(dst).current_num_ships() + travel_dist*leaf.map.planet(dst).ship_increase() + 1;
+}
+
+vector<team_planets::Fleet> SageBot::passive_enemy_team_orders_(Leaf_& leaf) const {
+  vector<team_planets::Fleet> orders;
+
+  // Analyzing all the enemy planets
+  for_each(leaf.map.planets_begin(), leaf.map.planets_end(), [this, &leaf, &orders](const Planet& planet) {
+    if(is_owned_by_enemy_team(planet)) {
+      bool is_backline = true;
+      vector<planet_id> neutral_neighbors;
+      vector<planet_id> enemy_neighbors;
+
+      for(size_t i = 0; is_backline && i < neighbors(planet.id()).size(); ++i) {
+        const Planet& dst_planet = leaf.map.planet(neighbors(planet.id())[i]);
+        if(is_owned_by_me(dst_planet)) is_backline = false;
+        if(is_neutral(dst_planet)) neutral_neighbors.push_back(dst_planet.id());
+        if(is_owned_by_my_team(dst_planet)) enemy_neighbors.push_back(dst_planet.id());
+      }
+
+      if(is_backline) {
+        // If the planet is backline, trying to attack the nearest enemy possible
+        sort(enemy_neighbors.begin(), enemy_neighbors.end(),
+             [&leaf, &planet](const planet_id id1, const planet_id id2) {
+          const unsigned int dist1 = planet.compute_travel_distance(leaf.map.planet(id1));
+          const unsigned int dist2 = planet.compute_travel_distance(leaf.map.planet(id2));
+          return dist1 < dist2;
+        });
+
+        bool    target_found  = false;
+        size_t  target_idx    = 0;
+        while(!target_found && target_idx < enemy_neighbors.size()) {
+          const unsigned int num_ships = num_ships_to_take_a_planet_(leaf, planet.id(), enemy_neighbors[target_idx]);
+          if(num_ships <= planet.current_num_ships()) target_found = true;
+          else ++target_idx;
+        }
+
+        if(target_found) {
+          orders.push_back(Fleet(neutral_player, planet.id(), enemy_neighbors[target_idx],
+                                 num_ships_to_take_a_planet_(leaf, planet.id(), enemy_neighbors[target_idx]), 0));
+        } else {
+          // If not, try to attack the nearest neutral
+          sort(neutral_neighbors.begin(), neutral_neighbors.end(),
+               [&leaf, &planet](const planet_id id1, const planet_id id2) {
+            const unsigned int dist1 = planet.compute_travel_distance(leaf.map.planet(id1));
+            const unsigned int dist2 = planet.compute_travel_distance(leaf.map.planet(id2));
+            return dist1 < dist2;
+          });
+
+          target_found = false;
+          target_idx = 0;
+          while(!target_found && target_idx < neutral_neighbors.size()) {
+            const unsigned int num_ships =
+                num_ships_to_take_a_planet_(leaf, planet.id(), neutral_neighbors[target_idx]);
+            if(num_ships <= planet.current_num_ships()) target_found = true;
+            else ++target_idx;
+          }
+
+          if(target_found) {
+            orders.push_back(Fleet(neutral_player, planet.id(), neutral_neighbors[target_idx],
+                                   num_ships_to_take_a_planet_(leaf, planet.id(), neutral_neighbors[target_idx]), 0));
+          }
+        }
+      }
+    }
+  });
+
+  return orders;
 }
