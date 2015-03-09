@@ -183,7 +183,11 @@ void SageBot::generate_possibilities_tree_(Leaf_& root) {
       // Updating stack, if the computation time is not over
       for(size_t i = 0; i < current_leaf.childrens.size() && !time_stop; ++i)
         for(size_t j = 0; j < current_leaf.childrens[i].childrens.size() && !time_stop; ++j) {
-          if(i == 0 && j == 0) continue;  // First child is a no-op, ignore it!
+          if(i == 0 && j == 0) {
+            // This is a no-op, but it may have some fleets in flight!
+            if(current_leaf.childrens[i].childrens[j].map.num_fleets() == 0)
+              continue; // A real no-op!
+          }
 
           // Checking current computation time
           const chrono::milliseconds cur_duration = current_tree_gen_duration_();
@@ -323,7 +327,7 @@ void SageBot::compute_possibility_tree_scores_(Leaf_& root) const {
 
 float SageBot::compute_final_state_score_(const Leaf_& leaf) const {
   const float planet_coeff = 0.1f;
-  const float ship_coeff = 0.001f;
+  const float ship_coeff = 0.0001f;
   const float neutral_planet_coeff = 0.3f;
 
   // Evaluating the number of ships and planets for each team
