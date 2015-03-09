@@ -92,14 +92,14 @@ Decision::orders_list MyDecision::generate_backline_planets_orders_() const {
 
   for(planet_id src_id:backline_planets()) {
     if(map().planet(src_id).current_num_ships() > num_ships_per_reinforcement_*map().planet(src_id).ship_increase()) {
-      // Searching for a nearest frontline planet
+      // Searching for a frontline planet with the less ships on it
       planet_id     best_planet_to_reinforce    = 0;
-      unsigned int  best_planet_travel_distance = 1000;
+      unsigned int  best_planet_num_ships       = 1000;
       for(planet_id dst_id:frontline_planets()) {
-        const unsigned int dist = map().planet(dst_id).compute_travel_distance(map().planet(src_id));
-        if(best_planet_to_reinforce == 0 || dist < best_planet_travel_distance) {
+        const unsigned int num_ships = map().planet(dst_id).current_num_ships();
+        if(best_planet_to_reinforce == 0 || num_ships < best_planet_num_ships) {
           best_planet_to_reinforce = dst_id;
-          best_planet_travel_distance = dist;
+          best_planet_num_ships = num_ships;
         }
       }
 
