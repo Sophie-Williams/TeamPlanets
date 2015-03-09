@@ -82,6 +82,9 @@ namespace sage {
     bool is_game_over_(const Leaf_& leaf) const;
     std::chrono::milliseconds current_tree_gen_duration_() const;
 
+    void compute_possibility_tree_scores_(Leaf_& root) const;
+    float compute_final_state_score_(const Leaf_& leaf) const;
+
     // Precomputed map parameters
     unsigned int  planets_mean_distance_;
     unsigned int  neighborhood_radius_multiplier_;

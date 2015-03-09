@@ -86,16 +86,28 @@ void SageBot::perform_turn_() {
   generate_possibilities_tree_(root);
   LOG << "Done in " << current_tree_gen_duration_().count() << " ms., depth = " << max_tree_depth_ << endl;
 
+  // Computing scores of each possible move
+  LOG << "Computing score for each move..." << endl;
+  compute_possibility_tree_scores_(root);
+  LOG << "Done." << endl;
+
+  for(size_t i = 0; i < root.childrens.size(); ++i) {
+    LOG << "Solution " << i << " with score = " << root.childrens[i].score << ": " << endl;
+    for(const Fleet& fleet:root.childrens[i].orders)
+      LOG << "\t" << fleet << endl;
+  }
+
   if(!root.childrens.empty()) {
-    size_t max_solution = 0;
-    size_t max_solution_size = root.childrens[0].orders.size();
+    size_t best_solution = 0;
+    size_t best_solution_score = root.childrens[0].score;
+
     for(size_t i = 0; i < root.childrens.size(); ++i)
-      if(max_solution_size < root.childrens[i].orders.size()) {
-        max_solution = i;
-        max_solution_size = root.childrens[i].orders.size();
+      if(best_solution_score < root.childrens[i].score) {
+        best_solution = i;
+        best_solution_score = root.childrens[i].score;
       }
 
-    for(const Fleet& fleet:root.childrens[max_solution].orders)
+    for(const Fleet& fleet:root.childrens[best_solution].orders)
       map().bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
   } else LOG << "No solutions!" << endl;
 }
@@ -261,4 +273,82 @@ bool SageBot::is_game_over_(const Leaf_& leaf) const {
 chrono::milliseconds SageBot::current_tree_gen_duration_() const {
   chrono::time_point<chrono::high_resolution_clock> cur_time = chrono::high_resolution_clock::now();
   return chrono::duration_cast<chrono::milliseconds>(cur_time - start_time_);
+}
+
+void SageBot::compute_possibility_tree_scores_(Leaf_& root) const {
+  // Initializing stack
+  struct State {
+    Leaf_*  leaf;
+    bool    second_pass;
+  };
+  typedef stack<State, vector<State> > state_stack;
+  state_stack S;
+
+  // Creating initial state
+  State initial_state;
+  initial_state.leaf = &root;
+  initial_state.second_pass = false;
+  S.push(initial_state);
+
+  // Main loop
+  while(!S.empty()) {
+    // Retrieving current state
+    State current_state = S.top();
+    S.pop();
+
+    if(current_state.leaf->childrens.empty()) {
+      // This is a final state, computing its score
+      current_state.leaf->score = compute_final_state_score_(*current_state.leaf);
+    } else {
+      if(current_state.second_pass) {
+        // The scores of children was already computed
+        current_state.leaf->score = 0.0f;
+        for(const Leaf_& child:current_state.leaf->childrens)
+          current_state.leaf->score += child.score;
+      } else {
+        // We need to compute the score of the childrens first
+        current_state.second_pass = true;
+        S.push(current_state);
+
+        for(Leaf_& child:current_state.leaf->childrens) {
+          State child_state;
+          child_state.leaf = &child;
+          child_state.second_pass = false;
+          S.push(child_state);
+        }
+      }
+    }
+  }
+}
+
+float SageBot::compute_final_state_score_(const Leaf_& leaf) const {
+  const float planet_coeff = 0.1f;
+  const float ship_coeff = 0.001f;
+  const float neutral_planet_coeff = 0.3f;
+
+  // Evaluating the number of ships and planets for each team
+  unsigned int my_team_planets = 0, my_team_ships = 0;
+  unsigned int enemy_team_planets = 0, enemy_team_ships = 0;
+  unsigned int neutral_planets = 0;
+
+  for_each(leaf.map.planets_begin(), leaf.map.planets_end(),
+           [this, &my_team_planets, &my_team_ships, &enemy_team_planets,
+            &enemy_team_ships, &neutral_planets](const Planet& planet) {
+    if(is_neutral(planet)) ++neutral_planets;
+    else {
+      if(is_owned_by_my_team(planet)) {
+        ++my_team_planets;
+        my_team_ships += planet.current_num_ships();
+      } else if(is_owned_by_enemy_team(planet)) {
+        ++enemy_team_planets;
+        enemy_team_ships += planet.current_num_ships();
+      }
+    }
+  });
+
+  if(my_team_planets == 0) return -1000.0f;    // We are dead, very bad
+  if(enemy_team_planets == 0) return 1000.0f;  // Enemy is dead, very good
+  return (float)my_team_ships*ship_coeff + (float)my_team_planets*planet_coeff
+         - (float)enemy_team_ships*ship_coeff - (float)enemy_team_planets*planet_coeff
+         - (float)neutral_planets*neutral_planet_coeff;
 }
