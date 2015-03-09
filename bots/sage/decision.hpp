@@ -37,8 +37,9 @@
 namespace sage {
   class Decision {
   public:
-    typedef std::vector<team_planets::Fleet>  orders_list;
-    typedef std::vector<orders_list>          decisions_list;
+    typedef std::vector<team_planets::planet_id>  planets_list;
+    typedef std::vector<team_planets::Fleet>      orders_list;
+    typedef std::vector<orders_list>              decisions_list;
 
     Decision(const SageBot& bot, const team_planets::Map& map);
     virtual ~Decision();
@@ -46,16 +47,33 @@ namespace sage {
     virtual decisions_list generate_decisions();
 
   protected:
+    // Bot and map accessors
     const SageBot& bot() const { return bot_; }
     const team_planets::Map& map() const { return map_; }
 
-    std::vector<team_planets::planet_id>& frontline_planets() { return frontline_planets_; }
-    const std::vector<team_planets::planet_id>& frontline_planets() const { return frontline_planets_; }
-    std::vector<team_planets::planet_id>& backline_planets() { return backline_planets_; }
-    const std::vector<team_planets::planet_id>& backline_planets() const { return backline_planets_; }
+    // Frontline and backline lists accessors
+    planets_list& frontline_planets() { return frontline_planets_; }
+    const planets_list& frontline_planets() const { return frontline_planets_; }
+    planets_list& backline_planets() { return backline_planets_; }
+    const planets_list& backline_planets() const { return backline_planets_; }
 
+    // Some common tools to make a decisions
     void perform_backline_frontline_classification_();
     unsigned int num_ships_to_take_a_planet_(team_planets::planet_id src, team_planets::planet_id dst) const;
+
+    // Recursive orders generation common for my and enemy decision
+    typedef std::vector<unsigned int> remaining_ships_list_;
+    struct DecisionState_ {
+      orders_list             current_decision;
+      planets_list            potential_targets;
+      remaining_ships_list_   remaining_ships;
+    };
+
+    decisions_list recursively_generate_decisions_(const planets_list& sources, const planets_list& destinations) const;
+    DecisionState_ generate_initial_decision_state_(const planets_list& sources,
+                                                    const planets_list& destinations) const;
+    orders_list generate_toplevel_orders_for_a_given_state_(const planets_list& sources,
+                                                            const DecisionState_& state) const;
 
   private:
     bool is_frontline_(team_planets::planet_id id) const;
@@ -63,8 +81,8 @@ namespace sage {
     const SageBot&            bot_;
     const team_planets::Map&  map_;
 
-    std::vector<team_planets::planet_id>  frontline_planets_;
-    std::vector<team_planets::planet_id>  backline_planets_;
+    planets_list  frontline_planets_;
+    planets_list  backline_planets_;
   };
 }
 

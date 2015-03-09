@@ -40,6 +40,14 @@ namespace sage {
     virtual ~EnemyDecision();
 
     virtual decisions_list generate_decisions();
+
+  private:
+    // List of potential sources and targets
+    typedef std::vector<team_planets::planet_id>  planets_list_;
+    planets_list_ potential_sources_;
+    planets_list_ potential_targets_;
+
+    void compute_list_of_potential_sources_and_targets_();
   };
 }
 

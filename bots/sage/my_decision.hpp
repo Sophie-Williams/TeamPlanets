@@ -47,27 +47,9 @@ namespace sage {
     const unsigned int  num_ships_per_reinforcement_;
 
     // List of potential targets
-    struct Target_ {
-      team_planets::planet_id id;
-      float                   score;
-    };
-    typedef std::vector<Target_>          targets_list_;
+    planets_list potential_targets_;
 
-    targets_list_ potential_targets_;
     void compute_list_of_potential_targets_();
-
-    // Decision recursive state
-    typedef std::vector<unsigned int> remaining_ships_list_;
-    struct DecisionState_ {
-      orders_list             current_decision;
-      targets_list_           potential_targets;
-      remaining_ships_list_   remaining_ships;
-    };
-
-    decisions_list recursively_generate_decisions_() const;
-    DecisionState_ generate_initial_decision_state_() const;
-    orders_list generate_toplevel_orders_for_a_given_state_(const DecisionState_& state) const;
-
     orders_list generate_backline_planets_orders_() const;
   };
 }

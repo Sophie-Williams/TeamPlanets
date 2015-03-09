@@ -162,6 +162,7 @@ void BattleThread::create_players_() {
     player_process->start(team1_bot_file_name_);
     if(!player_process->waitForStarted(10000)) players_.back().set_status(Player::Failed);
     bots_.push_back(player_process);
+    qDebug() << "\tprocess id = " << player_process->processId();
   }
 
   // Creating the second team
@@ -177,6 +178,7 @@ void BattleThread::create_players_() {
     player_process->start(team2_bot_file_name_);
     if(!player_process->waitForStarted(10000)) players_.back().set_status(Player::Failed);
     bots_.push_back(player_process);
+    qDebug() << "\tprocess id = " << player_process->processId();
   }
 
   players_mutex_.unlock();

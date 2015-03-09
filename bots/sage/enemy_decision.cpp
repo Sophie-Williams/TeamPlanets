@@ -28,8 +28,10 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
+#include <algorithm>
 #include "enemy_decision.hpp"
 
+using namespace std;
 using namespace team_planets;
 using namespace sage;
 
@@ -41,5 +43,41 @@ EnemyDecision::~EnemyDecision() {
 }
 
 Decision::decisions_list EnemyDecision::generate_decisions() {
+  // Perform frontline/backline classification
+  perform_backline_frontline_classification_();
+
+  // Compute the list of potential sources and targets
+  compute_list_of_potential_sources_and_targets_();
+
   return decisions_list();
+}
+
+void EnemyDecision::compute_list_of_potential_sources_and_targets_() {
+  // Clearing the list of potential sources and targets
+  potential_sources_.clear();
+  potential_targets_.clear();
+
+  // Analyzing my frontline planets that can be targeted by the enemy
+  for(planet_id dst_id:frontline_planets()) {
+    bool is_potential_target = false;
+
+    // Analyzing each neighbor
+    for(size_t i = 0; i < bot().neighbors(dst_id).size(); ++i) {
+      const Planet& src_planet = map().planet(bot().neighbors(dst_id)[i]);
+
+      // If the planet is owned by the enemy
+      if(bot().is_owned_by_enemy_team(src_planet)) {
+        is_potential_target = true; // Our planet is a potential target for the enemy
+
+        // Adding the planet to the list if it is not already in
+        auto it = find_if(potential_sources_.begin(), potential_sources_.end(),
+                          [&src_planet](const planet_id& other_planet) {
+          return src_planet.id() == other_planet;
+        });
+        if(it == end(potential_sources_)) potential_sources_.push_back(src_planet.id());
+      }
+    }
+
+    if(is_potential_target) potential_targets_.push_back(dst_id);
+  }
 }

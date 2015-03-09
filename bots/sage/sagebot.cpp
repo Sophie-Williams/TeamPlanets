@@ -85,13 +85,13 @@ void SageBot::perform_turn_() {
   Decision::decisions_list decisions = decision->generate_decisions();
   delete decision;
 
-  size_t n = 0;
-  for(Decision::orders_list orders:decisions) {
-    LOG << "Decision " << n << ":" << endl;
-    for(const Fleet& fleet:orders) LOG << fleet << endl;
-    LOG << endl;
-    ++n;
-  }
+//  size_t n = 0;
+//  for(Decision::orders_list orders:decisions) {
+//    LOG << "Decision " << n << ":" << endl;
+//    for(const Fleet& fleet:orders) LOG << fleet << endl;
+//    LOG << endl;
+//    ++n;
+//  }
 
   size_t biggest_decision = 0;
   size_t biggest_decision_size = decisions[0].size();
