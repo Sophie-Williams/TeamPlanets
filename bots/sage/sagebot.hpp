@@ -46,11 +46,12 @@ namespace sage {
     enum Player_ { Myself, Enemy };
     struct Leaf_ {
       // This decision leaf context
-      std::vector<team_planets::Fleet>  orders;
+      unsigned int                      current_turn;
       team_planets::Map                 map;
       Player_                           current_player;
 
       // This leaf score
+      std::vector<team_planets::Fleet>  orders;
       float                             score;
 
       // This leaf childrens
@@ -60,8 +61,8 @@ namespace sage {
   public:
     DISABLE_COPY(SageBot)
 
-    SageBot(): num_ships_per_reinforcement_(10), planets_mean_distance_(0),
-      neighborhood_radius_multiplier_(1), neighborhood_radius_(0) {}
+    SageBot(): planets_mean_distance_(0), neighborhood_radius_multiplier_(1), neighborhood_radius_(0),
+      max_tree_comp_duration_(100), max_tree_depth_(5) {}
     virtual ~SageBot() {}
 
     neighbors_list& neighbors(team_planets::planet_id planet) { return neighborhoods_[planet - 1]; }
@@ -71,20 +72,15 @@ namespace sage {
     virtual void init_();
     virtual void perform_turn_();
 
-    bool is_frontline_(team_planets::planet_id id) const;
-    unsigned int num_ships_to_take_a_planet_(team_planets::planet_id src, team_planets::planet_id dst) const;
-
-    void take_attack_decisions_();
-    void process_backline_planet_(team_planets::planet_id id);
-
-    void generate_decisions_(Leaf_& leaf) const;
-
   private:
     unsigned int compute_planets_mean_distance_() const;
     void compute_planets_neighborhoods_();
 
-    // User defined bot parameters
-    const unsigned int  num_ships_per_reinforcement_;
+    void generate_possibilities_tree_(Leaf_& root);
+    bool generate_possible_turns_(Leaf_& leaf) const;
+    bool generate_enemy_turns_(Leaf_& leaf) const;
+    bool is_game_over_(const Leaf_& leaf) const;
+    std::chrono::milliseconds current_tree_gen_duration_() const;
 
     // Precomputed map parameters
     unsigned int  planets_mean_distance_;
@@ -94,12 +90,13 @@ namespace sage {
     // Precomputed planets neighborhoods
     neighborhoods_list  neighborhoods_;
 
-    // Per turn data structures
-    std::vector<team_planets::planet_id>  frontline_planets_;
-    std::vector<team_planets::planet_id>  backline_planets_;
+    // User defined possibilities tree parameters
+    const std::chrono::milliseconds max_tree_comp_duration_;
 
-    // Decision related data
-    std::chrono::time_point<std::chrono::high_resolution_clock> starting_time_;
+    // Possibilities tree parameters
+    unsigned int                                                max_tree_depth_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_time_;
+
   };
 }
 

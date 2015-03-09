@@ -95,11 +95,11 @@ void Map::bot_end_turn() {
 void Map::bot_launch_fleet(planet_id source, planet_id destination, unsigned int num_ships) {
   // Perform the launch
   planet(source).remove_ships(num_ships);
-  fleets_.push_back(Fleet(myself_, source, destination, num_ships,
+  fleets_.push_back(Fleet(planet(source).current_owner(), source, destination, num_ships,
                           planet(destination).compute_travel_distance(planet(source))));
 
   // Store the pending order
-  pending_orders_.push_back(Fleet(myself_, source, destination, num_ships,
+  pending_orders_.push_back(Fleet(planet(source).current_owner(), source, destination, num_ships,
                             planet(destination).compute_travel_distance(planet(source))));
 }
 

@@ -93,7 +93,7 @@ Decision::decisions_list Decision::recursively_generate_decisions_(const planets
 
   // Main loop (we arbitrary limit the maximum number of decisions because in some rare cases there is too much of
   // them)
-  while(!S.empty() && decisions.size() < 5000) {
+  while(!S.empty() && decisions.size() < 50) {
     // Retrieving the current state
     DecisionState_ current_state = S.top();
     S.pop();
