@@ -74,7 +74,7 @@ void MyDecision::compute_list_of_potential_targets_() {
                                  || (bot().team_is_complete() && bot().is_owned_by_enemy_team(dst_planet));
 
       // If the planet is targetable and it is not already targeted
-      if(is_potential_target && !map().bot_planet_is_targeted_by_a_fleet(dst_planet.id())) {
+      if(is_potential_target) {
         // Adding the planet to the list if it is not already in
         auto it = find_if(potential_targets_.begin(), potential_targets_.end(),
                           [&dst_planet](const planet_id& other_target) {

@@ -166,12 +166,24 @@ Decision::orders_list Decision::generate_toplevel_orders_for_a_given_state_(cons
     }
 
     // Generating the attack order, if the number of ships on the source planet remains positive
+    bool was_attacked = false;
     for(size_t i = 0; i < src_planets_idx.size(); ++i) {
       const int remaining_ships = (int)state.remaining_ships[src_planets_idx[i]]
                                   - (int)num_ships_to_take_a_planet_(sources[src_planets_idx[i]], target);
       if(remaining_ships >= 0) {
+        was_attacked = true;
         output_orders.push_back(Fleet(neutral_player, sources[src_planets_idx[i]], target,
                                       num_ships_to_take_a_planet_(sources[src_planets_idx[i]], target), 0));
+      }
+    }
+
+    if(!was_attacked) {
+      // Try a suicide attack
+      for(size_t i = 0; i < src_planets_idx.size(); ++i) {
+        if(state.remaining_ships[src_planets_idx[i]] > 10*map().planet(sources[src_planets_idx[i]]).ship_increase()) {
+          output_orders.push_back(Fleet(neutral_player, sources[src_planets_idx[i]], target,
+                                        state.remaining_ships[src_planets_idx[i]], 0));
+        }
       }
     }
   }

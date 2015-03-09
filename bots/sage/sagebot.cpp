@@ -157,7 +157,7 @@ void SageBot::generate_possibilities_tree_(Leaf_& root) {
   start_time_ = chrono::high_resolution_clock::now();
   chrono::milliseconds cur_duration(0);
   max_tree_depth_ = 0;
-  while(cur_duration < max_tree_comp_duration_) {
+  while(!current_level.empty() && cur_duration < max_tree_comp_duration_) {
     next_level.clear();
 
     for(size_t n = 0; n < current_level.size() && cur_duration < max_tree_comp_duration_; ++n) {
