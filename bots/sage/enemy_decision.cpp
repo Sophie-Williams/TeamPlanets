@@ -49,7 +49,8 @@ Decision::decisions_list EnemyDecision::generate_decisions() {
   // Compute the list of potential sources and targets
   compute_list_of_potential_sources_and_targets_();
 
-  return decisions_list();
+  // Computing the list of possible decisions
+  return recursively_generate_decisions_(potential_sources_, potential_targets_);
 }
 
 void EnemyDecision::compute_list_of_potential_sources_and_targets_() {

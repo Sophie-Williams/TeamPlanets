@@ -85,13 +85,17 @@ void SageBot::perform_turn_() {
   Decision::decisions_list decisions = decision->generate_decisions();
   delete decision;
 
-//  size_t n = 0;
-//  for(Decision::orders_list orders:decisions) {
-//    LOG << "Decision " << n << ":" << endl;
-//    for(const Fleet& fleet:orders) LOG << fleet << endl;
-//    LOG << endl;
-//    ++n;
-//  }
+  decision = new EnemyDecision(*this, decision_root.map);
+  Decision::decisions_list enemy_decisions = decision->generate_decisions();
+  delete decision;
+
+  size_t n = 0;
+  for(Decision::orders_list orders:enemy_decisions) {
+    LOG << "Decision " << n << ":" << endl;
+    for(const Fleet& fleet:orders) LOG << fleet << endl;
+    LOG << endl;
+    ++n;
+  }
 
   size_t biggest_decision = 0;
   size_t biggest_decision_size = decisions[0].size();
@@ -102,7 +106,6 @@ void SageBot::perform_turn_() {
     }
   }
 
-  LOG << "Selected decision is " << biggest_decision << endl;
   for(const Fleet& fleet:decisions[biggest_decision]) {
     map().bot_launch_fleet(fleet.source(), fleet.destination(), fleet.num_ships());
   }
