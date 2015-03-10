@@ -62,7 +62,7 @@ namespace sage {
     DISABLE_COPY(SageBot)
 
     SageBot(): planets_mean_distance_(0), neighborhood_radius_multiplier_(1), neighborhood_radius_(0),
-      max_tree_comp_duration_(500), max_tree_depth_(5) {}
+      max_tree_comp_duration_(100), max_turn_(200), max_tree_depth_(5) {}
     virtual ~SageBot() {}
 
     neighbors_list& neighbors(team_planets::planet_id planet) { return neighborhoods_[planet - 1]; }
@@ -79,17 +79,12 @@ namespace sage {
     void generate_possibilities_tree_(Leaf_& root);
     void generate_possible_turns_(Leaf_& leaf) const;
     void generate_enemy_turns_(Leaf_& leaf) const;
-    void generate_passive_orders_(Leaf_& leaf) const;
     void update_child_leaves_maps(Leaf_& leaf) const;
     bool is_game_over_(const Leaf_& leaf) const;
     std::chrono::milliseconds current_tree_gen_duration_() const;
 
     void compute_possibility_tree_scores_(Leaf_& root) const;
     float compute_final_state_score_(const Leaf_& leaf) const;
-
-    unsigned int num_ships_to_take_a_planet_(const Leaf_& leaf, team_planets::planet_id src,
-                                             team_planets::planet_id dst) const;
-    std::vector<team_planets::Fleet> passive_enemy_team_orders_(Leaf_& leaf) const;
 
     // Precomputed map parameters
     unsigned int  planets_mean_distance_;
@@ -101,6 +96,7 @@ namespace sage {
 
     // User defined possibilities tree parameters
     const std::chrono::milliseconds max_tree_comp_duration_;
+    const unsigned int              max_turn_;
 
     // Possibilities tree parameters
     unsigned int                                                max_tree_depth_;

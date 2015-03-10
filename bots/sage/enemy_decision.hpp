@@ -42,12 +42,16 @@ namespace sage {
     virtual decisions_list generate_decisions();
 
   private:
+    // User defined bot parameters
+    const unsigned int  num_ships_per_reinforcement_;
+
     // List of potential sources and targets
     typedef std::vector<team_planets::planet_id>  planets_list_;
     planets_list_ potential_sources_;
     planets_list_ potential_targets_;
 
     void compute_list_of_potential_sources_and_targets_();
+    orders_list generate_backline_orders_();
   };
 }
 

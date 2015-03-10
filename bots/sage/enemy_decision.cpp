@@ -36,7 +36,7 @@ using namespace team_planets;
 using namespace sage;
 
 EnemyDecision::EnemyDecision(const SageBot& bot, const Map& map):
-  Decision(bot, map) {
+  Decision(bot, map), num_ships_per_reinforcement_(10) {
 }
 
 EnemyDecision::~EnemyDecision() {
@@ -50,7 +50,12 @@ Decision::decisions_list EnemyDecision::generate_decisions() {
   compute_list_of_potential_sources_and_targets_();
 
   // Computing the list of possible decisions
-  return recursively_generate_decisions_(potential_sources_, potential_targets_);
+  decisions_list decisions = recursively_generate_decisions_(potential_sources_, potential_targets_);
+  orders_list backline_orders = generate_backline_orders_();
+  for(orders_list& decision:decisions)
+      decision.insert(decision.end(), backline_orders.begin(), backline_orders.end());
+
+  return decisions;
 }
 
 void EnemyDecision::compute_list_of_potential_sources_and_targets_() {
@@ -81,4 +86,90 @@ void EnemyDecision::compute_list_of_potential_sources_and_targets_() {
 
     if(is_potential_target) potential_targets_.push_back(dst_id);
   }
+}
+
+Decision::orders_list EnemyDecision::generate_backline_orders_() {
+  orders_list orders;
+
+  // Analyzing all the enemy planets
+  for_each(map().planets_begin(), map().planets_end(), [this, &orders](const Planet& planet) {
+    if(bot().is_owned_by_enemy_team(planet)) {
+      bool is_backline = true;
+      vector<planet_id> neutral_neighbors;
+      vector<planet_id> enemy_neighbors;
+
+      for(size_t i = 0; is_backline && i < bot().neighbors(planet.id()).size(); ++i) {
+        const Planet& dst_planet = map().planet(bot().neighbors(planet.id())[i]);
+        if(bot().is_owned_by_me(dst_planet)) is_backline = false;
+        if(bot().is_neutral(dst_planet)) neutral_neighbors.push_back(dst_planet.id());
+        if(bot().is_owned_by_my_team(dst_planet)) enemy_neighbors.push_back(dst_planet.id());
+      }
+
+      if(is_backline) {
+        // If the planet is backline, trying to attack the nearest enemy possible
+        sort(enemy_neighbors.begin(), enemy_neighbors.end(),
+             [this, &planet](const planet_id id1, const planet_id id2) {
+          const unsigned int dist1 = planet.compute_travel_distance(map().planet(id1));
+          const unsigned int dist2 = planet.compute_travel_distance(map().planet(id2));
+          return dist1 < dist2;
+        });
+
+        bool    target_found  = false;
+        size_t  target_idx    = 0;
+        while(!target_found && target_idx < enemy_neighbors.size()) {
+          const unsigned int num_ships = num_ships_to_take_a_planet_(planet.id(), enemy_neighbors[target_idx]);
+          if(num_ships <= planet.current_num_ships()) target_found = true;
+          else ++target_idx;
+        }
+
+        if(target_found) {
+          orders.push_back(Fleet(neutral_player, planet.id(), enemy_neighbors[target_idx],
+                                 num_ships_to_take_a_planet_(planet.id(), enemy_neighbors[target_idx]), 0));
+        } else {
+          // If not, try to attack the nearest neutral
+          sort(neutral_neighbors.begin(), neutral_neighbors.end(),
+               [this, &planet](const planet_id id1, const planet_id id2) {
+            const unsigned int dist1 = planet.compute_travel_distance(map().planet(id1));
+            const unsigned int dist2 = planet.compute_travel_distance(map().planet(id2));
+            return dist1 < dist2;
+          });
+
+          target_found = false;
+          target_idx = 0;
+          while(!target_found && target_idx < neutral_neighbors.size()) {
+            const unsigned int num_ships =
+                num_ships_to_take_a_planet_(planet.id(), neutral_neighbors[target_idx]);
+            if(num_ships <= planet.current_num_ships()) target_found = true;
+            else ++target_idx;
+          }
+
+          if(target_found) {
+            orders.push_back(Fleet(neutral_player, planet.id(), neutral_neighbors[target_idx],
+                                   num_ships_to_take_a_planet_(planet.id(), neutral_neighbors[target_idx]), 0));
+          } else {
+            // If still not, shuttle the ships to the less defended frontline planet
+            if(planet.current_num_ships() >= num_ships_per_reinforcement_*planet.ship_increase()) {
+              planet_id best_source_to_reinforce      = 0;
+              unsigned int best_source_num_ships      = 1000;
+              for(planet_id dst_planet:potential_sources_) {
+                if(planet.current_owner() == map().planet(dst_planet).current_owner()) {
+                  const unsigned int num_ships = map().planet(dst_planet).current_num_ships();
+                  if(best_source_to_reinforce == 0 || num_ships < best_source_num_ships) {
+                    best_source_to_reinforce = dst_planet;
+                    best_source_num_ships = num_ships;
+                  }
+                }
+              }
+
+              if(best_source_to_reinforce != 0)
+                orders.push_back(Fleet(neutral_player, planet.id(), best_source_to_reinforce,
+                                       planet.current_num_ships(), 0));
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return orders;
 }
