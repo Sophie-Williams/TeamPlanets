@@ -62,7 +62,7 @@ namespace sage {
     DISABLE_COPY(SageBot)
 
     SageBot(): planets_mean_distance_(0), neighborhood_radius_multiplier_(1), neighborhood_radius_(0),
-      max_tree_comp_duration_(100), max_turn_(200), max_tree_depth_(5) {}
+      max_tree_comp_duration_(500), max_turn_(200), max_tree_depth_(5) {}
     virtual ~SageBot() {}
 
     neighbors_list& neighbors(team_planets::planet_id planet) { return neighborhoods_[planet - 1]; }

@@ -41,6 +41,7 @@ namespace sage {
     virtual ~MyDecision();
 
     virtual decisions_list generate_decisions();
+    orders_list generate_allies_orders() const;
 
   private:
     // User defined bot parameters

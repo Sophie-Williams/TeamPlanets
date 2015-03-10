@@ -209,6 +209,13 @@ void SageBot::generate_enemy_turns_(Leaf_& leaf) const {
   EnemyDecision decision(*this, leaf.map);
   Decision::decisions_list posibilities = decision.generate_decisions();
 
+  // Add ally moves to the enemy decisions
+  MyDecision ally_decision(*this, leaf.map);
+  Decision::orders_list ally_orders = ally_decision.generate_allies_orders();
+  for(Decision::orders_list orders:posibilities) {
+    orders.insert(orders.end(), ally_orders.begin(), ally_orders.end());
+  }
+
   // Updating child leaves with enemy moves
   for(size_t i = 0; i < leaf.childrens.size(); ++i) {
     Leaf_& child = leaf.childrens[i];

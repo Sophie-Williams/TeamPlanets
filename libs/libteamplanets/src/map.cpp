@@ -110,6 +110,13 @@ bool Map::bot_planet_is_targeted_by_a_fleet(planet_id id) const {
   return it != end(fleets_);
 }
 
+bool Map::bot_planet_is_targeted_by_my_fleet(planet_id id) const {
+  auto it = find_if(fleets_.begin(), fleets_.end(), [this, id](const Fleet& fleet) {
+    return  fleet.player() == myself_ && fleet.destination() == id;
+  });
+  return it != end(fleets_);
+}
+
 // Game mechanics for engine
 void Map::engine_perform_turn() {
   update_fleets_();
