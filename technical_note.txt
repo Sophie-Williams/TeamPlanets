@@ -1,0 +1,160 @@
+                          Sage bot technical note
+                          =======================
+
+1. Introduction
+---------------
+   In this short technical note, I will provide you with an overview of the 
+architecture of this bot and detail some of its key algorithms.
+   Because I was asked to provide a solution in only two weeks, I have decided 
+to follow a classical approach to this kind of problems: generate a tree of 
+possible moves, then to compute a score for each node and select the move with 
+the highest score. This way, I was sure to have something minimally working at 
+the deadline. Moreover, it seems to be the way that was chosen by the best 
+Google AI challenge contestants.
+   I have chosen to use C++11, because it is the programming language I am  the 
+more familiar with.
+
+2. Basic data structures (libteamplanets)
+-----------------------------------------
+   The libteamplanets static library contains the basic data structures of the 
+game. They was placed to a separate library because they are common to the bot 
+and the game engine (not included in this package) that I have wrote to test it.
+   The most notable classes are Planet (planet.hpp) and Fleet (fleet.hpp) with a
+straightforward usage and the class Map (map.hpp, map.cpp) that aggregates them.
+   The most interesting methods of the Map are:
+     * bot_begin_turn() - reads the bot standard input and updates the map 
+       accordingly.
+     * myself() - returns the current player identifier.
+     * message() and set_message() - returns the message transmitted by the 
+       teammate and allows to define a message to send to the team.
+     * bot_launch_fleet() - schedules a fleet launch at the end of the turn and 
+                            updates the number of ships on the source planet.
+     * bot_end_turn() - writes the fleet launch commands and the message to 
+                        transmit to the bot standard output.
+   Another interesting method is engine_perform_turn(). It advances the fleets,
+performs the battles and updates the number of ships on each planet. Although it
+was written for the engine, it is used by the bot during the prediction tree
+generation.
+
+3. The Bot class
+----------------
+   The bot sources proper are located in the bot sub-directory. The class Bot 
+(bot.hpp, bot.cpp) encapsulates some staff common to any bot out there, namely
+logging and the team management (see next section).
+   The logging is performed by the Log singleton class (log.hpp, log.cpp). The 
+logged messages are written to the file sage_%i.txt in the bot execution 
+directory where %n is the current player id.
+
+4. The team management (Team class)
+-----------------------------------
+   The information about the this bot team is managed by the Team class 
+(team.hpp, team.cpp). This class contains a vector of player's id's. At the very
+first round, this player id is added to the list (the bot is always in it's own 
+team).
+   Each time a non zero message is received, it is added to the list. At the end
+of the current round, we send away the last id of the list not already sent. If 
+we receive our own id, we know that we have the id's of all our teammates. This
+state is indicated by the is_complete() method.
+   The team is also considered complete if we receive more than 10 id's, because
+sometimes, when one of our teammates dies early, the chain can be broken.
+   To simplify the code, the Bot class (see section 3) contains a set of methods
+to check if a planet is owned by me, my team or the enemy's.
+
+5. The bot intelligence (SageBot class)
+---------------------------------------
+   The bot intelligence is contained in the SageBot class (sagebot.hpp, 
+sagebot.cpp). It contains the methods and data structures to generate a tree of
+possible moves.
+   The most interesting methods are init_() and perform_turn_(). The first is 
+called once, during the first turn only. The second is called at every turn.
+
+6. Neighborhood graph (SageBot::init_())
+----------------------------------------
+   To simplify future computations, we compute a list of neighbors for each of 
+the planets. A planet is considered a neighbor of another planet if the distance
+between them is inferior to an arbitrary neighborhood radius.
+   At first, the radius is set to a mean distance between a planet and it's 
+nearest neighbor. Then it is grown iteratively until each planet have at least 
+two neighbors.
+
+7. Prediction tree (SageBot::generate_possibilities_tree_())
+----------------------------------------------------------
+   At each turn (SageBot::perform_turn_()), the bot compute a tree of possible 
+moves. The tree is computed level by level, each level corresponds to a turn, to
+ensure that it is well balanced.
+   Each conceptual level corresponds to a two levels in the actual tree. First of
+all, we compute the list of possible moves corresponding to the current 
+position using MyDecision class (see section 9) and generate a child node for 
+each of them. Then we generate a list of possible enemy moves using 
+EnemyDecision class (see section 9). Finally, for each child node, we generate a
+set of children, each corresponding to enemy moves. They are the same for each 
+child because the enemy performs its moves at the same time as we are.
+   Instead of limiting the depth of the tree, I have decided to limit it's 
+computation time. The process is stopped when it was executed for more then 
+500 ms. This way, we are sure not to exceed our computation quota (1 s.).
+
+8. Score computation (SageBot::compute_possibility_tree_scores_)
+----------------------------------------------------------------
+   Once the prediction tree was computed, we recursively evaluate the scores for
+each of its nodes. If the node have children, its score is the mean value of 
+their scores. Otherwise, the score is evaluated using the following formula:
+     score = A*my_team_ships + B*my_team_planets 
+             - A*enemy_team_ships - B*enemy_team_planets
+where A = 0.1 and B = 0.001.
+   Where the scores are computed, the bot executes the move corresponding to the
+node with the biggest score.
+
+9. Computation of possible moves (MyDecision class, EnemyDecision class)
+------------------------------------------------------------------------
+   It is obviously impossible to compute a prediction tree of a useful depth for
+all the possible moves. The trick is to compute a reasonable subset. This 
+computation is performed by the Decision (decision.hpp, decision.cpp), 
+MyDecision (my_decision.hpp, my_decision.cpp) and EnemyDecision 
+(enemy_decision.hpp, enemy_decision.cpp) classes. 
+   The principle is the some for the bot and the enemy. I describe it for the 
+current player. First of all, the players planets are classified as frontline
+or backline. A planet is frontline if it have an enemy or neutral planet in its
+neighborhood. Then we compute a list of potential targets, enemy or neutral 
+planets in the neighborhood of our frontline planets.
+   After that, we recursively compute a list of possible attacks. At each 
+iteration, we find a frontline planet that have enough ships to successfully 
+attack the target. If we find one, we add the corresponding order to the list, 
+update the number of remaining ships and use the same algorithm to generate the
+suborders. If we can't find one, we generate an order to try a suicide attack 
+(all the ships on the planet) for each frontline planet in the neighborhood.
+   Once all the possible moves was generated, we generate a list of orders for 
+the backline planets. They are always the same and so are added to each possible
+move. Each backline planet having enough ships (10 times it production), simply 
+sends all its ships to the frontline planet having the less of them.
+
+10. Enemy backline and the ally planets (EnemyDecision class)
+-------------------------------------------------------------
+   Each branch of the prediction tree corresponds to the moves of mine or 
+enemy's frontline planets. Or, to keep the prediction accurate, we need to do
+something meaningful with the remaining planets.
+   So, at each round of the prediction, enemy's backline and my ally planets 
+act using the following simple algorithm:
+   1. If the planet have an enemy planet in the neighborhood and have enough 
+      ships to take it, perform an attack.
+   2. If not, try to attack a neutral in the neighborhood.
+   3. Otherwise, send all the ships to this planet's owner frontline planet 
+      having the less of them, if the current planet have 10 times its 
+      production ships available. 
+
+11. Conclusion
+--------------
+   At this point, the bot solidly wins against simple strategies like bully, 
+rage or the like. I will probably loose against a sophisticated opponent like
+the top five of the Google AI challenge, but it provide a robust basis for 
+experimentations. From here, the moves generation routines can be tweaked almost
+infinitely.
+   Here is a non exhaustive list of obvious enhancements to make:
+    1. Generate a more intelligent combined moves to take a single planet using
+       the ships from several ones. Then get rid of the dangerous suicide moves.
+    2. Use the messages to perform combined moves with a teammate.
+    3. Investigate a strange behavior at some positions when the bot prefers not
+       to attack even if it have an overwhelming force. Probably a bug somewhere 
+       in the algorithm.
+
+                                    Vadim Litvinov
+                                    10 mars 2015

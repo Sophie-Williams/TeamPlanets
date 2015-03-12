@@ -1,0 +1,56 @@
+                     TeamPlanets installation instructions
+                     =====================================
+
+1. Introduction
+---------------
+   This file contains the installation instructions for the planet wars game 
+engine and bots. For a more general description of this distribution, as well as
+the usage instructions, please refer yourself to the README.txt contained in the
+same directory as this file.
+
+2. Prerequisites
+----------------
+   These bots and game engine are written in C++, so to compile them you 
+obviously need a working C++ compiler with C++11 support. The development was 
+performed using GCC 4.9, but any modern C++ compiler should work without any 
+trouble.
+
+   The building process is written using CMake, so you also need CMake 2.8.11 or
+higher installed. You can find it at the official web site: 
+http://www.cmake.org.
+
+   The game engine also uses Qt 5 for its GUI, so get it from http://www.qt.io 
+if you don't already have it.
+
+   Also, if you want to perform the compilation on Windows, run CMake under
+Cygwin (https://www.cygwin.com) because the building script uses the "find" 
+command and it isn't directly available. 
+
+   Also, please note that the development was performed on Linux. If you want to
+compile this distribution using Visual C++ it should work, but the author could 
+not  guarantee it, knowing somewhat weird nature of its C++ support.
+
+3. Compilation
+--------------
+   Once you have all the prerequisites, launch the following commands in this 
+package root directory, replacing <PREFIX> by the directory where you want this
+distribution to be installed:
+   $ mkdir build
+   $ cd build
+   $ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=<PREFIX> ..
+   $ make
+   $ make install
+
+   If you use a compiler that don't understand GCC options (for example, Visual 
+C++), perform the following command _after_ the first CMake invocation:
+   $ cmake -DCMAKE_CXX_FLAGS=<OPTS>
+Replace <OPTS> with the option to enable C++11 support.
+
+   After the successful compilation, you can find the executables at 
+<PREFIX>/bin and the shared libraries at <PREFIX>/lib. Don't forget to add the 
+later to you system libraries search path, for example on Linux, run:
+   $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<PREFIX>/lib
+Have fun!
+
+                                             Vadim Litvinov
+                                             12 mars 2015
